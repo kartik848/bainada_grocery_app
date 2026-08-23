@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Bainada Brothers B2B Wholesale Grocery">
+
+  <!-- Mobile meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Bainada Wholesale">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Bainada Brothers - B2B Wholesale Grocery</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0D2818;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 100vw;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 9999;
+      background-color: #0D2818;
+      color: white;
+      transition: opacity 0.4s ease-out;
+    }
+    .loading-container.hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #2E7D32;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p style="margin-top: 16px; font-weight: 700; letter-spacing: 1px; font-size: 18px;">BAINADA BROTHERS</p>
+    <p style="margin-top: 4px; font-size: 12px; opacity: 0.7; letter-spacing: 0.5px;">B2B Wholesale Portal</p>
+  </div>
+
+  <script>
+    function dismissLoading() {
+      var loader = document.getElementById('loading');
+      if (loader && !loader.classList.contains('hide')) {
+        loader.classList.add('hide');
+        setTimeout(function() {
+          if (loader && loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 400);
+      }
+    }
+
+    // Dismiss when Flutter renders first frame
+    window.addEventListener('flutter-first-frame', dismissLoading);
+
+    // Hard fallback: Max 1.8 seconds timeout
+    setTimeout(dismissLoading, 1800);
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

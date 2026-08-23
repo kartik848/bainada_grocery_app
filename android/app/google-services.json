@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "397992760905",
+    "project_id": "bainada-brothers-144ae",
+    "storage_bucket": "bainada-brothers-144ae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:397992760905:android:9d8165025c25ac9cc5d198",
+        "android_client_info": {
+          "package_name": "com.example.bainada_grocery_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCJBKvNMNy8CgaD7X98OGavA_nqVma144"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

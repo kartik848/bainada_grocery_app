@@ -210,7 +210,10 @@ class UserModel {
       addedBySalesmanId: (map['addedBySalesmanId'] ?? map['assignedSalesmanId'] ?? map['salesmanId'])?.toString(),
       addedBySalesmanName: (map['addedBySalesmanName'] ?? map['salesmanName'])?.toString(),
       creditLimit: parseDouble(map['creditLimit'] ?? map['khataLimit'], 0.0),
-      outstandingDue: parseDouble(map['outstandingDue'] ?? map['due'] ?? map['khataBalance'] ?? map['pendingDue'], 0.0),
+      outstandingDue: () {
+        final raw = parseDouble(map['outstandingDue'] ?? map['due'] ?? map['khataBalance'] ?? map['pendingDue'], 0.0);
+        return raw < 0.0 ? 0.0 : raw;
+      }(),
       minOrderLimit: parseDouble(map['minOrderLimit'] ?? map['minOrder'], 0.0),
       commissionRate: parseDouble(map['commissionRate'] ?? map['commission'], 0.0),
       dailyTarget: map['dailyTarget'] != null ? parseDouble(map['dailyTarget']) : null,

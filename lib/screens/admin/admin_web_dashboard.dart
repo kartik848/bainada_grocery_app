@@ -467,7 +467,8 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
       builder: (context, merchantSnap) {
         final merchants = merchantSnap.data ?? [];
         final totalMarketOutstanding =
-            merchants.fold(0.0, (acc, m) => acc + m.outstandingDue);
+            merchants.fold(0.0, (acc, m) => acc + (m.outstandingDue > 0 ? m.outstandingDue : 0.0));
+        final safeMarketOutstanding = totalMarketOutstanding <= 0.0 ? 0.0 : totalMarketOutstanding;
 
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -525,7 +526,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                       width: cardWidth,
                       child: _buildWebMetricCard(
                         title: 'Total Market Outstanding',
-                        value: CurrencyFormatter.format(totalMarketOutstanding),
+                        value: CurrencyFormatter.format(safeMarketOutstanding),
                         subtitle: '${merchants.length} Active Kirana Stores',
                         icon: Icons.account_balance_wallet_rounded,
                         color: const Color(0xFF6A1B9A),
@@ -2408,8 +2409,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
 
           final merchants = snapshot.data ?? [];
 
-          final totalMarketDue =
-              merchants.fold(0.0, (acc, m) => acc + m.outstandingDue);
+          final totalMarketDue = (merchants.fold(0.0, (acc, m) => acc + (m.outstandingDue > 0 ? m.outstandingDue : 0.0))).clamp(0.0, double.infinity);
           final totalCreditGranted =
               merchants.fold(0.0, (acc, m) => acc + m.creditLimit);
 

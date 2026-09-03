@@ -642,7 +642,7 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
     final double earnedCommission =
         (effectiveTurnover * commissionRate) / 100.0;
     final double totalMarketDue =
-        _merchants.fold(0.0, (sum, m) => sum + m.outstandingDue);
+        (_merchants.fold(0.0, (sum, m) => sum + (m.outstandingDue > 0 ? m.outstandingDue : 0.0))).clamp(0.0, double.infinity);
 
     return ListView(
       padding: const EdgeInsets.all(12),

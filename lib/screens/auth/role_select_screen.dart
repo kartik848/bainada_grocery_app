@@ -43,22 +43,25 @@ class RoleSelectScreen extends StatelessWidget {
                         const SizedBox(height: 20),
                         _buildDesktopRoleCards(context),
                         const SizedBox(height: 24),
-                        _buildAdminButton(context),
-                        const SizedBox(height: 16),
                         const IgnitoCorpBranding(isDarkTheme: false, isCompact: false),
                       ],
                     ),
                   )
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 1. Compact Brand Header
+                        // 1. Brand Header
                         _buildHeader(isDesktop: false),
 
+                        const SizedBox(height: 16),
+
                         // 2. Portal Selection Pill
-                        _buildInstructionPill(),
+                        Center(child: _buildInstructionPill()),
+
+                        const SizedBox(height: 16),
 
                         // 3. The 3 Role Cards (All 3 in 1 screen, non-scrolling)
                         _buildRoleTileMobile(
@@ -66,39 +69,43 @@ class RoleSelectScreen extends StatelessWidget {
                           role: UserRole.merchant,
                           title: 'Kirana Merchant',
                           hindiTitle: 'दुकानदार',
-                          badge: '🛒 थोक राशन व किराना आर्डर',
+                          badge: 'थोक किराना व राशन',
                           color: const Color(0xFF1B5E20),
                           iconWidget: Animated3DMerchantIcon(
-                            size: 54,
+                            size: 60,
                             onTap: () => _openRoleLoginSheet(context, UserRole.merchant),
                           ),
                         ),
+                        const SizedBox(height: 14),
                         _buildRoleTileMobile(
                           context: context,
                           role: UserRole.salesman,
                           title: 'Field Salesman',
-                          hindiTitle: 'फील्ड सेल्समैन',
-                          badge: '💼 दुकान ऑनबोर्डिंग व बुकिंग',
+                          hindiTitle: 'सेल्समैन',
+                          badge: 'दुकान ऑनबोर्डिंग व बुकिंग',
                           color: const Color(0xFFE65100),
                           iconWidget: Animated3DSalesmanIcon(
-                            size: 54,
+                            size: 60,
                             onTap: () => _openRoleLoginSheet(context, UserRole.salesman),
                           ),
                         ),
+                        const SizedBox(height: 14),
                         _buildRoleTileMobile(
                           context: context,
                           role: UserRole.deliveryBoy,
                           title: 'Delivery Partner',
                           hindiTitle: 'डिलीवरी साथी',
-                          badge: '🚚 मैप नेविगेशन व COD कलेक्शन',
+                          badge: 'लाइव मैप व COD',
                           color: const Color(0xFF4A148C),
                           iconWidget: Animated3DDeliveryIcon(
-                            size: 54,
+                            size: 60,
                             onTap: () => _openRoleLoginSheet(context, UserRole.deliveryBoy),
                           ),
                         ),
 
-                        // 4. Admin Direct Access & Footer
+                        const SizedBox(height: 24),
+
+                        // 4. Footer (No Admin Login)
                         _buildMobileFooter(context),
                       ],
                     ),
@@ -243,53 +250,30 @@ class RoleSelectScreen extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 54,
-                  height: 54,
+                  width: 60,
+                  height: 60,
                   child: Center(child: iconWidget),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: color.withAlpha(18),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              hindiTitle,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: color,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        badge,
+                        '$hindiTitle • $badge',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: color,
                         ),
@@ -299,27 +283,25 @@ class RoleSelectScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'लॉगिन',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withAlpha(50),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                      SizedBox(width: 3),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.white),
                     ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -388,55 +370,14 @@ class RoleSelectScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAdminButton(BuildContext context) {
-    return TextButton.icon(
-      onPressed: () => _openRoleLoginSheet(context, UserRole.admin),
-      icon: const Icon(Icons.admin_panel_settings_rounded, size: 18, color: Color(0xFF374151)),
-      label: const Text(
-        'Super-Admin Web & Master Portal Login',
-        style: TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
-          color: Color(0xFF374151),
-          decoration: TextDecoration.underline,
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildMobileFooter(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: () => _openRoleLoginSheet(context, UserRole.admin),
-          borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.admin_panel_settings_rounded, size: 15, color: Color(0xFF374151)),
-                SizedBox(width: 5),
-                Text(
-                  'Super-Admin Web Portal Login',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF374151),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        const IgnitoCorpBranding(
-          isDarkTheme: false,
-          isCompact: true,
-        ),
-      ],
+    return const Center(
+      child: IgnitoCorpBranding(
+        isDarkTheme: false,
+        isCompact: true,
+      ),
     );
   }
 

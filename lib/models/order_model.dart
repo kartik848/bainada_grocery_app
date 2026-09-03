@@ -146,7 +146,7 @@ class CartItem {
     this.imageUrl,
   }) : originalUnitPrice = originalUnitPrice ?? unitPrice;
 
-  double get taxableTotal => unitPrice * quantity;
+  double get taxableTotal => totalItemPrice - gstAmount;
   int get totalPieces => quantity * unitMultiplier;
 
   bool get isTieredDiscountApplied => originalUnitPrice > unitPrice;

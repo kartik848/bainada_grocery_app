@@ -114,7 +114,7 @@ class ProductCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'GST ${product.gstRate.toInt()}%',
+                    'Incl. GST ${product.gstRate.toInt()}%',
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -296,11 +296,11 @@ class ProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '/ ${product.unit}',
+                            '/ ${product.unit} (With GST)',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

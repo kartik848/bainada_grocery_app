@@ -13,8 +13,9 @@ import '../../widgets/cart_bottom_sheet.dart';
 import '../../widgets/ignito_branding.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/profile_avatar_picker.dart';
+import '../../widgets/sign_out_dialog.dart';
 import '../../widgets/top_location_bar.dart';
-import '../auth/auth_wrapper.dart';
 
 enum MerchantDeliveryLocationMode {
   liveGps,
@@ -173,35 +174,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Sign Out',
-            onPressed: () async {
-              final orderProv = Provider.of<OrderProvider>(context, listen: false);
-              final cartProv = Provider.of<CartProvider>(context, listen: false);
-              final nav = Navigator.of(context);
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Sign Out'),
-                  content: const Text('Are you sure you want to sign out from your Kirana Merchant account?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-              if (confirm == true) {
-                orderProv.clear();
-                cartProv.clearCart();
-                await auth.logout();
-                nav.pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                  (route) => false,
-                );
-              }
-            },
+            onPressed: () => showSignOutConfirmation(context),
           ),
         ],
       ),
@@ -1308,11 +1281,7 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
             ),
             child: Row(
               children: [
-                const CircleAvatar(
-                  radius: 26,
-                  backgroundColor: AppColors.primarySurface,
-                  child: Icon(Icons.storefront_rounded, size: 28, color: AppColors.primary),
-                ),
+                const ProfileAvatarPicker(radius: 32),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -1426,37 +1395,9 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () async {
-                final orderProv = Provider.of<OrderProvider>(context, listen: false);
-                final cartProv = Provider.of<CartProvider>(context, listen: false);
-                final nav = Navigator.of(context);
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Sign Out'),
-                    content: const Text('Are you sure you want to sign out from your Kirana Merchant account?'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true) {
-                  orderProv.clear();
-                  cartProv.clearCart();
-                  await auth.logout();
-                  nav.pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                    (route) => false,
-                  );
-                }
-              },
+              onPressed: () => showSignOutConfirmation(context),
               icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              label: const Text('लॉग आउट करें (Sign Out)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.red),
                 padding: const EdgeInsets.symmetric(vertical: 12),

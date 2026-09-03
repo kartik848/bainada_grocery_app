@@ -215,6 +215,7 @@ class AuthProvider with ChangeNotifier {
     try {
       await _authService.updateUserData(updatedUser);
       _currentUserModel = updatedUser;
+      await _saveCachedUser(updatedUser);
     } catch (e) {
       _errorMessage = e.toString();
     } finally {

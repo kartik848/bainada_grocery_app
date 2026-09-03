@@ -61,6 +61,7 @@ class UserModel {
   final double? latitude; // Merchant GPS Latitude
   final double? longitude; // Merchant GPS Longitude
   final String? locationAddress; // Reverse geocoded address
+  final String? profileImageUrl; // User / Shop Profile Photo
   final bool isApproved;
   final bool isActive;
   final DateTime createdAt;
@@ -91,6 +92,7 @@ class UserModel {
     this.latitude,
     this.longitude,
     this.locationAddress,
+    this.profileImageUrl,
     this.isApproved = true,
     this.isActive = true,
     required this.createdAt,
@@ -225,6 +227,9 @@ class UserModel {
       locationAddress: map['locationAddress']?.toString() ??
           map['geoAddress']?.toString() ??
           map['liveLocationAddress']?.toString(),
+      profileImageUrl: map['profileImageUrl']?.toString() ??
+          map['photoUrl']?.toString() ??
+          map['avatarUrl']?.toString(),
       isApproved: parseBool(map['isApproved'], true),
       isActive: parseBool(map['isActive'], true),
       createdAt: parsedCreatedAt,
@@ -260,6 +265,7 @@ class UserModel {
       'latitude': latitude,
       'longitude': longitude,
       'locationAddress': locationAddress,
+      'profileImageUrl': profileImageUrl,
       'isApproved': isApproved,
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -292,6 +298,7 @@ class UserModel {
     double? latitude,
     double? longitude,
     String? locationAddress,
+    String? profileImageUrl,
     bool? isApproved,
     bool? isActive,
     DateTime? createdAt,
@@ -322,6 +329,7 @@ class UserModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       locationAddress: locationAddress ?? this.locationAddress,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       isApproved: isApproved ?? this.isApproved,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,

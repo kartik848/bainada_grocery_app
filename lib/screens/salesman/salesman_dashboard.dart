@@ -14,8 +14,9 @@ import '../../widgets/cart_bottom_sheet.dart';
 import '../../widgets/ignito_branding.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/profile_avatar_picker.dart';
+import '../../widgets/sign_out_dialog.dart';
 import '../../widgets/top_location_bar.dart';
-import '../auth/auth_wrapper.dart';
 import 'add_merchant_screen.dart';
 
 class SalesmanDashboard extends StatefulWidget {
@@ -139,11 +140,7 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
               color: const Color(0xFFFFF3E0),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Color(0xFFE65100),
-                    child: Icon(Icons.badge_rounded,
-                        color: Colors.white, size: 20),
-                  ),
+                  const ProfileAvatarPicker(radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -212,34 +209,9 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
                     title: const Text('Sign Out',
                         style: TextStyle(
                             color: Colors.red, fontWeight: FontWeight.w600)),
-                    onTap: () async {
+                    onTap: () {
                       Navigator.pop(context);
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Sign Out'),
-                          content: const Text('Are you sure you want to sign out from your Field Salesman account?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                              child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true && context.mounted) {
-                        Provider.of<OrderProvider>(context, listen: false).clear();
-                        Provider.of<CartProvider>(context, listen: false).clearCart();
-                        await auth.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                            (route) => false,
-                          );
-                        }
-                      }
+                      showSignOutConfirmation(context);
                     },
                   ),
                 ],
@@ -307,34 +279,7 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Sign Out'),
-                  content: const Text('Are you sure you want to sign out from your Field Salesman account?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-              if (confirm == true && context.mounted) {
-                Provider.of<OrderProvider>(context, listen: false).clear();
-                Provider.of<CartProvider>(context, listen: false).clearCart();
-                await auth.logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                    (route) => false,
-                  );
-                }
-              }
-            },
+            onPressed: () => showSignOutConfirmation(context),
           ),
         ],
       ),

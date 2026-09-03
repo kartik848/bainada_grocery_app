@@ -5,7 +5,6 @@ import '../../models/cash_settlement_model.dart';
 import '../../models/order_model.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
@@ -14,8 +13,9 @@ import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/bainada_logo.dart';
 import '../../widgets/ignito_branding.dart';
+import '../../widgets/profile_avatar_picker.dart';
+import '../../widgets/sign_out_dialog.dart';
 import '../../widgets/top_location_bar.dart';
-import '../auth/auth_wrapper.dart';
 
 class DeliveryDashboard extends StatefulWidget {
   const DeliveryDashboard({super.key});
@@ -122,10 +122,7 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
               color: const Color(0xFFF3E5F5),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: Color(0xFF4A148C),
-                    child: Icon(Icons.local_shipping_rounded, color: Colors.white, size: 20),
-                  ),
+                  const ProfileAvatarPicker(radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -182,34 +179,9 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
                     title: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                    onTap: () async {
+                    onTap: () {
                       Navigator.pop(context);
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Sign Out'),
-                          content: const Text('Are you sure you want to sign out from your Delivery Staff account?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                              child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true && context.mounted) {
-                        Provider.of<OrderProvider>(context, listen: false).clear();
-                        Provider.of<CartProvider>(context, listen: false).clearCart();
-                        await auth.logout();
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                            (route) => false,
-                          );
-                        }
-                      }
+                      showSignOutConfirmation(context);
                     },
                   ),
                 ],
@@ -247,43 +219,29 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
             ),
           ],
         ),
-        actions: [
-          const TopLocationBar(
-            backgroundColor: Colors.white24,
-            textColor: Colors.white,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(38),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            color: const Color(0xFF38006B),
+            child: const Row(
+              children: [
+                Expanded(
+                  child: TopLocationBar(
+                    backgroundColor: Colors.transparent,
+                    textColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 4),
+        ),
+        actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Sign Out'),
-                  content: const Text('Are you sure you want to sign out from your Delivery Staff account?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-              if (confirm == true && context.mounted) {
-                Provider.of<OrderProvider>(context, listen: false).clear();
-                Provider.of<CartProvider>(context, listen: false).clearCart();
-                await auth.logout();
-                if (context.mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                    (route) => false,
-                  );
-                }
-              }
-            },
+            onPressed: () => showSignOutConfirmation(context),
           ),
         ],
       ),

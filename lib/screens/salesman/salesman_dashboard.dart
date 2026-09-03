@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
@@ -34,11 +35,11 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
   List<UserModel> _merchants = [];
   UserModel? _selectedMerchant;
   bool _isLoadingMerchants = true;
+  StreamSubscription<List<UserModel>>? _merchantsSub;
 
   @override
   void initState() {
     super.initState();
-    _loadMerchants();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.currentUserModel != null) {
@@ -47,38 +48,78 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
           uid: auth.currentUserModel!.uid,
         );
       }
+      _listenToMyMerchants();
     });
   }
 
-  void _loadMerchants() async {
-    if (!mounted) return;
-    setState(() => _isLoadingMerchants = true);
-    try {
-      final merchantsList =
-          await _firestoreService.getUsersByRole(UserRole.merchant);
+  @override
+  void dispose() {
+    _merchantsSub?.cancel();
+    super.dispose();
+  }
+
+  void _listenToMyMerchants() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final currentSalesman = auth.currentUserModel;
+    if (currentSalesman == null) {
+      if (mounted) setState(() => _isLoadingMerchants = false);
+      return;
+    }
+
+    _merchantsSub?.cancel();
+    _merchantsSub = _firestoreService
+        .streamUsersByRole(UserRole.merchant)
+        .listen((allMerchants) {
       if (!mounted) return;
+
+      final sId = currentSalesman.uid.trim();
+      final sPhone = currentSalesman.phone.replaceAll(RegExp(r'\D'), '');
+      final sName = currentSalesman.name.trim().toLowerCase();
+
+      // STRICT FILTER: Only show merchants created by or assigned to this salesman
+      final myMerchants = allMerchants.where((m) {
+        final mSalesmanId = m.addedBySalesmanId?.trim();
+        final mSalesmanName = m.addedBySalesmanName?.trim().toLowerCase();
+
+        // 1. Match by Salesman UID
+        if (mSalesmanId != null && mSalesmanId.isNotEmpty && mSalesmanId == sId) {
+          return true;
+        }
+        // 2. Match by clean Phone
+        if (sPhone.isNotEmpty && mSalesmanId != null && mSalesmanId.isNotEmpty && mSalesmanId == sPhone) {
+          return true;
+        }
+        // 3. Match by Name if ID was not populated
+        if (mSalesmanName != null && mSalesmanName.isNotEmpty && mSalesmanName == sName) {
+          return true;
+        }
+        return false;
+      }).toList();
+
       setState(() {
-        _merchants = merchantsList;
+        _merchants = myMerchants;
+        _isLoadingMerchants = false;
         if (_selectedMerchant != null) {
           final match = _merchants.where((m) => m.uid == _selectedMerchant!.uid);
           if (match.isNotEmpty) {
             _selectedMerchant = match.first;
           } else {
-            _selectedMerchant = null;
+            _selectedMerchant = _merchants.isNotEmpty ? _merchants.first : null;
           }
+        } else if (_merchants.isNotEmpty) {
+          _selectedMerchant = _merchants.first;
         }
         Provider.of<CartProvider>(context, listen: false)
             .setSelectedMerchant(_selectedMerchant);
-        _isLoadingMerchants = false;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _merchants = [];
-        _selectedMerchant = null;
-        _isLoadingMerchants = false;
-      });
-    }
+    }, onError: (err) {
+      debugPrint('[SalesmanDashboard] Error streaming merchants: $err');
+      if (mounted) setState(() => _isLoadingMerchants = false);
+    });
+  }
+
+  void _loadMerchants() {
+    _listenToMyMerchants();
   }
 
   void _openCheckout() {
@@ -778,16 +819,72 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
         ),
         const SizedBox(height: 16),
 
-        const Text(
-          'My Onboarded Kirana Stores & Field Actions',
-          style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'My Onboarded Kirana Stores',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE65100).withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_merchants.length} Stores',
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFE65100)),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
 
-        ..._merchants.map((m) {
+        if (_merchants.isEmpty && !_isLoadingMerchants)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.storefront_outlined, size: 48, color: Colors.grey.shade400),
+                const SizedBox(height: 12),
+                const Text(
+                  'No Onboarded Kirana Stores Yet',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Only Kirana stores created by you will appear here.\nTap below to onboard your first Kirana merchant.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _showOnboardMerchantDialog,
+                  icon: const Icon(Icons.person_add_alt_1, size: 16),
+                  label: const Text('Add Kirana Merchant Now'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE65100),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._merchants.map((m) {
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             shape:

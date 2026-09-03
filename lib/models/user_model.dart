@@ -255,6 +255,8 @@ class UserModel {
       'state': state,
       'addedBySalesmanId': addedBySalesmanId,
       'addedBySalesmanName': addedBySalesmanName,
+      'assignedSalesmanId': addedBySalesmanId,
+      'salesmanId': addedBySalesmanId,
       'creditLimit': creditLimit,
       'outstandingDue': outstandingDue,
       'khataBalance': outstandingDue,

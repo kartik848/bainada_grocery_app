@@ -12,6 +12,7 @@ import '../../widgets/cart_bottom_sheet.dart';
 import '../../widgets/ignito_branding.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/top_location_bar.dart';
 import '../auth/auth_wrapper.dart';
 
 class MerchantDashboard extends StatefulWidget {
@@ -90,6 +91,24 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
               ),
             ),
           ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(38),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            color: AppColors.primaryDark,
+            child: const Row(
+              children: [
+                Expanded(
+                  child: TopLocationBar(
+                    backgroundColor: Colors.transparent,
+                    textColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           Stack(

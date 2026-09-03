@@ -14,6 +14,7 @@ import '../../widgets/cart_bottom_sheet.dart';
 import '../../widgets/ignito_branding.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/top_location_bar.dart';
 import '../auth/auth_wrapper.dart';
 import 'add_merchant_screen.dart';
 
@@ -278,6 +279,24 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
               style: const TextStyle(fontSize: 11, color: Colors.white70),
             ),
           ],
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(38),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            color: const Color(0xFFBF360C),
+            child: const Row(
+              children: [
+                Expanded(
+                  child: TopLocationBar(
+                    backgroundColor: Colors.transparent,
+                    textColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         actions: [
           IconButton(

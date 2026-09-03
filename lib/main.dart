@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/location_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/product_provider.dart';
 import 'screens/auth/auth_wrapper.dart';
@@ -29,6 +30,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),

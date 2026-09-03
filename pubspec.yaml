@@ -51,6 +51,7 @@ dependencies:
   firebase_database: ^11.1.4
   dio: ^5.7.0
   geolocator: ^14.0.2
+  flutter_ringtone_player: ^4.0.0+4
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/live_mode_service.dart';
@@ -35,8 +37,46 @@ class AuthProvider with ChangeNotifier {
   bool get isDeliveryBoy => _currentUserModel?.role == UserRole.deliveryBoy;
 
   AuthProvider() {
+    _loadCachedUser();
     _initAuthListener();
     _initLiveModeListener();
+  }
+
+  Future<void> _loadCachedUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedJson = prefs.getString('cached_user_model');
+      if (cachedJson != null && cachedJson.isNotEmpty) {
+        final decoded = json.decode(cachedJson);
+        if (decoded is Map<String, dynamic>) {
+          _currentUserModel = UserModel.fromMap(decoded, decoded['uid']?.toString());
+          _isLoading = false;
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[AuthProvider] Error loading cached user: $e');
+    }
+  }
+
+  Future<void> _saveCachedUser(UserModel userModel) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final map = userModel.toMap();
+      map['createdAt'] = userModel.createdAt.toIso8601String();
+      await prefs.setString('cached_user_model', json.encode(map));
+      await prefs.setString('cached_user_uid', userModel.uid);
+    } catch (e) {
+      debugPrint('[AuthProvider] Error saving cached user: $e');
+    }
+  }
+
+  Future<void> _clearCachedUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('cached_user_model');
+      await prefs.remove('cached_user_uid');
+    } catch (_) {}
   }
 
   void _initLiveModeListener() {
@@ -74,8 +114,7 @@ class AuthProvider with ChangeNotifier {
       (UserModel? userModel) {
         if (userModel != null) {
           _currentUserModel = userModel;
-        } else {
-          _currentUserModel = null;
+          _saveCachedUser(userModel);
         }
         _isLoading = false;
         notifyListeners();
@@ -188,6 +227,7 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
+      await _clearCachedUser();
       await _authService.signOut();
     } catch (_) {}
     _currentUserModel = null;

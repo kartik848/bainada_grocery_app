@@ -9,10 +9,12 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
+import '../../services/order_alert_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/bainada_logo.dart';
 import '../../widgets/ignito_branding.dart';
+import '../../widgets/top_location_bar.dart';
 import '../auth/auth_wrapper.dart';
 
 class DeliveryDashboard extends StatefulWidget {
@@ -91,6 +93,13 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
     final double activeCodCash = (user?.pendingCashInHand != null && user!.pendingCashInHand > 0)
         ? user.pendingCashInHand
         : codCashCollected;
+
+    // 🔔 Real-time order alert with ringtone & vibration for Delivery Partner
+    if (user != null && orderProvider.orders.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        OrderAlertService().checkOrdersForAlert(context, orderProvider.orders, user.uid);
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -239,6 +248,11 @@ class _DeliveryDashboardState extends State<DeliveryDashboard> {
           ],
         ),
         actions: [
+          const TopLocationBar(
+            backgroundColor: Colors.white24,
+            textColor: Colors.white,
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',

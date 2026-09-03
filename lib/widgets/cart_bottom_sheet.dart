@@ -114,13 +114,50 @@ class CheckoutModal extends StatefulWidget {
   State<CheckoutModal> createState() => _CheckoutModalState();
 }
 
+enum DeliveryLocationChoice {
+  liveGps,
+  savedShop,
+  manualAddress,
+}
+
 class _CheckoutModalState extends State<CheckoutModal> {
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _manualAddressController = TextEditingController();
+  DeliveryLocationChoice _locationChoice = DeliveryLocationChoice.liveGps;
+  double? _liveLat;
+  double? _liveLng;
+  String? _liveAddress;
+  bool _isDetectingLiveGps = false;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _detectLiveLocation();
+  }
+
+  Future<void> _detectLiveLocation() async {
+    setState(() => _isDetectingLiveGps = true);
+    try {
+      final loc = await LocationService().getLiveLocationDetails();
+      if (loc != null && mounted) {
+        setState(() {
+          _liveLat = loc.latitude;
+          _liveLng = loc.longitude;
+          _liveAddress = loc.address;
+        });
+      }
+    } catch (e) {
+      debugPrint('[CheckoutModal] Live GPS error: $e');
+    } finally {
+      if (mounted) setState(() => _isDetectingLiveGps = false);
+    }
+  }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _manualAddressController.dispose();
     super.dispose();
   }
 
@@ -318,6 +355,183 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                   ),
                                 ),
                               ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 📍 DELIVERY LOCATION SELECTION (3 Options: Live GPS, Saved Shop, Manual/Google Search)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_rounded, color: Color(0xFF16A34A), size: 18),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'डिलीवरी की लोकेशन चुनें (Select Location)',
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF15803D)),
+                                  ),
+                                  const Spacer(),
+                                  if (_isDetectingLiveGps)
+                                    const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A))),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Option 1: Live GPS Location (Blinkit Style)
+                              InkWell(
+                                onTap: () => setState(() => _locationChoice = DeliveryLocationChoice.liveGps),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _locationChoice == DeliveryLocationChoice.liveGps ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _locationChoice == DeliveryLocationChoice.liveGps ? const Color(0xFF16A34A) : AppColors.border,
+                                      width: _locationChoice == DeliveryLocationChoice.liveGps ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        _locationChoice == DeliveryLocationChoice.liveGps ? Icons.radio_button_checked : Icons.radio_button_off,
+                                        color: _locationChoice == DeliveryLocationChoice.liveGps ? const Color(0xFF16A34A) : AppColors.textMuted,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('📍 वर्तमान लाइव लोकेशन (Live GPS Detect)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              _liveAddress != null && _liveAddress!.isNotEmpty
+                                                  ? _liveAddress!
+                                                  : (_isDetectingLiveGps ? 'GPS से लोकेशन खोजी जा रही है...' : 'लाइव GPS लोकेशन टैग होगी'),
+                                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                            ),
+                                            if (_liveLat != null && _liveLng != null) ...[
+                                              const SizedBox(height: 2),
+                                              Text('Coordinates: ${_liveLat!.toStringAsFixed(4)}, ${_liveLng!.toStringAsFixed(4)}',
+                                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF166534))),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.refresh_rounded, size: 18, color: Color(0xFF16A34A)),
+                                        tooltip: 'Re-detect GPS',
+                                        onPressed: _detectLiveLocation,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Option 2: Saved Shop Address
+                              InkWell(
+                                onTap: () => setState(() => _locationChoice = DeliveryLocationChoice.savedShop),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _locationChoice == DeliveryLocationChoice.savedShop ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _locationChoice == DeliveryLocationChoice.savedShop ? const Color(0xFF16A34A) : AppColors.border,
+                                      width: _locationChoice == DeliveryLocationChoice.savedShop ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        _locationChoice == DeliveryLocationChoice.savedShop ? Icons.radio_button_checked : Icons.radio_button_off,
+                                        color: _locationChoice == DeliveryLocationChoice.savedShop ? const Color(0xFF16A34A) : AppColors.textMuted,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('🏠 रजिस्टर्ड दुकान का पता (Saved Shop Address)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              effectiveMerchant.address != null && effectiveMerchant.address!.isNotEmpty
+                                                  ? effectiveMerchant.address!
+                                                  : '${effectiveMerchant.shopName ?? effectiveMerchant.name}, Jaipur',
+                                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Option 3: Manual / Google Maps Search
+                              InkWell(
+                                onTap: () => setState(() => _locationChoice = DeliveryLocationChoice.manualAddress),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _locationChoice == DeliveryLocationChoice.manualAddress ? const Color(0xFFF0FDF4) : const Color(0xFFF9FAFB),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: _locationChoice == DeliveryLocationChoice.manualAddress ? const Color(0xFF16A34A) : AppColors.border,
+                                      width: _locationChoice == DeliveryLocationChoice.manualAddress ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            _locationChoice == DeliveryLocationChoice.manualAddress ? Icons.radio_button_checked : Icons.radio_button_off,
+                                            color: _locationChoice == DeliveryLocationChoice.manualAddress ? const Color(0xFF16A34A) : AppColors.textMuted,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Text('✏️ नया पता / गूगल मैप सर्च (Manual Address)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                      if (_locationChoice == DeliveryLocationChoice.manualAddress) ...[
+                                        const SizedBox(height: 8),
+                                        TextField(
+                                          controller: _manualAddressController,
+                                          decoration: InputDecoration(
+                                            hintText: 'गली, मोहल्ला, दुकान नंबर या लैंडमार्क दर्ज करें...',
+                                            hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -626,25 +840,37 @@ class _CheckoutModalState extends State<CheckoutModal> {
                         ),
                         const SizedBox(height: 14),
 
-                        // Live Location Tag Indicator (Blinkit Style)
+                        // Selected Location Confirmation Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF0FDF4),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: const Color(0xFFBBF7D0)),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(Icons.gps_fixed_rounded, size: 14, color: Color(0xFF16A34A)),
-                              SizedBox(width: 6),
+                              Icon(
+                                _locationChoice == DeliveryLocationChoice.liveGps
+                                    ? Icons.gps_fixed_rounded
+                                    : (_locationChoice == DeliveryLocationChoice.savedShop
+                                        ? Icons.storefront_rounded
+                                        : Icons.edit_location_alt_rounded),
+                                size: 15,
+                                color: const Color(0xFF16A34A),
+                              ),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  'Live GPS tagged for Delivery Partner navigation (Blinkit Style)',
-                                  style: TextStyle(
+                                  _locationChoice == DeliveryLocationChoice.liveGps
+                                      ? 'Delivery: वर्तमान लाइव GPS लोकेशन पर होगी'
+                                      : (_locationChoice == DeliveryLocationChoice.savedShop
+                                          ? 'Delivery: रजिस्टर्ड दुकान के पते पर होगी'
+                                          : 'Delivery: दर्ज किए गए नए पते पर होगी'),
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     color: Color(0xFF15803D),
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
@@ -665,12 +891,32 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
                                     final isSalesman = auth.isSalesman;
 
-                                    // 📍 Live GPS location capture at time of ordering (Blinkit Style)
-                                    LocationDataResult? liveLoc;
-                                    try {
-                                      liveLoc = await LocationService().getLiveLocationDetails();
-                                    } catch (e) {
-                                      debugPrint('[Checkout] Location fetch error: $e');
+                                    // Resolve Delivery Location based on user's choice
+                                    String resolvedAddress = effectiveMerchant.address ?? 'Jaipur, Rajasthan';
+                                    double? resolvedLat;
+                                    double? resolvedLng;
+                                    String? resolvedLiveLoc;
+
+                                    switch (_locationChoice) {
+                                      case DeliveryLocationChoice.liveGps:
+                                        resolvedLat = _liveLat ?? effectiveMerchant.latitude;
+                                        resolvedLng = _liveLng ?? effectiveMerchant.longitude;
+                                        resolvedAddress = _liveAddress ?? effectiveMerchant.address ?? 'Jaipur, Rajasthan';
+                                        resolvedLiveLoc = _liveAddress ?? effectiveMerchant.address;
+                                        break;
+                                      case DeliveryLocationChoice.savedShop:
+                                        resolvedLat = effectiveMerchant.latitude;
+                                        resolvedLng = effectiveMerchant.longitude;
+                                        resolvedAddress = effectiveMerchant.address ?? 'Jaipur, Rajasthan';
+                                        resolvedLiveLoc = effectiveMerchant.locationAddress ?? effectiveMerchant.address;
+                                        break;
+                                      case DeliveryLocationChoice.manualAddress:
+                                        final typed = _manualAddressController.text.trim();
+                                        resolvedAddress = typed.isNotEmpty ? typed : (effectiveMerchant.address ?? 'Jaipur, Rajasthan');
+                                        resolvedLiveLoc = typed.isNotEmpty ? typed : null;
+                                        resolvedLat = null;
+                                        resolvedLng = null;
+                                        break;
                                     }
 
                                     final orderId = await orderProvider.placeOrder(
@@ -684,9 +930,10 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                       grandTotal: cart.grandTotal,
                                       paymentType: cart.paymentType,
                                       notes: _notesController.text.trim(),
-                                      deliveryLatitude: liveLoc?.latitude,
-                                      deliveryLongitude: liveLoc?.longitude,
-                                      liveLocationAddress: liveLoc?.address,
+                                      deliveryLatitude: resolvedLat,
+                                      deliveryLongitude: resolvedLng,
+                                      liveLocationAddress: resolvedLiveLoc,
+                                      deliveryAddressOverride: resolvedAddress,
                                     );
 
                                     setState(() => _isSubmitting = false);

@@ -157,6 +157,7 @@ class OrderProvider with ChangeNotifier {
     double? deliveryLatitude,
     double? deliveryLongitude,
     String? liveLocationAddress,
+    String? deliveryAddressOverride,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -177,7 +178,9 @@ class OrderProvider with ChangeNotifier {
             : merchant.name,
         merchantPhone: merchant.phone,
         merchantGstin: merchant.gstin,
-        merchantAddress: merchant.address ?? '${merchant.city}, Rajasthan',
+        merchantAddress: deliveryAddressOverride ??
+            merchant.address ??
+            '${merchant.city}, Rajasthan',
         salesmanId: salesman?.uid ?? merchant.addedBySalesmanId,
         salesmanName: salesman?.name ?? merchant.addedBySalesmanName,
         items: items,

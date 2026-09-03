@@ -82,8 +82,23 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return const AdminWebDashboard();
         }
 
-        // 2. Loading State on Mobile with 1.8s safety timeout guard
-        if (auth.isLoading && !_forceTimeout) {
+        // 2. If user is authenticated & user profile is loaded, route directly to role dashboard!
+        if (auth.isAuthenticated && auth.currentUserModel != null) {
+          final role = auth.userRole ?? UserRole.merchant;
+          switch (role) {
+            case UserRole.admin:
+              return const AdminDashboard();
+            case UserRole.salesman:
+              return const SalesmanDashboard();
+            case UserRole.deliveryBoy:
+              return const DeliveryDashboard();
+            case UserRole.merchant:
+              return const MerchantDashboard();
+          }
+        }
+
+        // 3. Still loading Firebase Auth or User profile
+        if (auth.isLoading) {
           return const Scaffold(
             backgroundColor: AppColors.primaryDark,
             body: Center(
@@ -112,24 +127,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        // 3. Mobile Native App -> Multi-Role Selection
-        if (!auth.isAuthenticated || auth.currentUserModel == null) {
-          return const RoleSelectScreen();
-        }
-
-        final role = auth.userRole ?? UserRole.merchant;
-
-        // 4. Mobile Layout routing
-        switch (role) {
-          case UserRole.admin:
-            return const AdminDashboard();
-          case UserRole.salesman:
-            return const SalesmanDashboard();
-          case UserRole.deliveryBoy:
-            return const DeliveryDashboard();
-          case UserRole.merchant:
-            return const MerchantDashboard();
-        }
+        // 4. Truly not logged in -> Show Role Selection
+        return const RoleSelectScreen();
       },
     );
   }

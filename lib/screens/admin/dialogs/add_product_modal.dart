@@ -122,6 +122,11 @@ class _AddProductModalState extends State<AddProductModal> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.productToEdit != null;
+    final productProvider = Provider.of<ProductProvider>(context);
+    final categoriesList = List<String>.from(productProvider.rawCategories);
+    if (!categoriesList.contains(_selectedCategory) && _selectedCategory.isNotEmpty) {
+      categoriesList.insert(0, _selectedCategory);
+    }
 
     return Padding(
       padding: EdgeInsets.only(
@@ -169,10 +174,16 @@ class _AddProductModalState extends State<AddProductModal> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _selectedCategory,
-                      decoration: const InputDecoration(
-                          labelText: 'Category', border: OutlineInputBorder()),
-                      items: AppConstants.productCategories
-                          .where((c) => c != 'All Categories')
+                      decoration: InputDecoration(
+                        labelText: 'Category',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 20),
+                          tooltip: 'Add new category',
+                          onPressed: () => _showAddCategoryDialog(context),
+                        ),
+                      ),
+                      items: categoriesList
                           .map((c) => DropdownMenuItem(
                               value: c,
                               child: Text(c,
@@ -505,6 +516,40 @@ class _AddProductModalState extends State<AddProductModal> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showAddCategoryDialog(BuildContext context) {
+    final catCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Category / नई श्रेणी',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: catCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'e.g. Dry Fruits, Pooja Items, etc.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final val = catCtrl.text.trim();
+              if (val.isEmpty) return;
+              final p = Provider.of<ProductProvider>(context, listen: false);
+              await p.addCategory(val);
+              setState(() => _selectedCategory = val);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Add & Select'),
+          ),
+        ],
       ),
     );
   }

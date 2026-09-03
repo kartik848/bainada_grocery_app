@@ -1146,9 +1146,11 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: DropdownButton<String>(
-                    value: productProvider.selectedCategory,
+                    value: productProvider.categories.contains(productProvider.selectedCategory)
+                        ? productProvider.selectedCategory
+                        : 'All Categories',
                     underline: const SizedBox.shrink(),
-                    items: AppConstants.productCategories
+                    items: productProvider.categories
                         .map((c) => DropdownMenuItem(
                             value: c,
                             child:
@@ -1159,15 +1161,28 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                     },
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () => _showProductDialogWeb(),
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('+ Add Product'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 14),
+                        horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: () => _showManageCategoriesDialogWeb(),
+                  icon: const Icon(Icons.category_rounded, size: 18),
+                  label: const Text('+ Add Category'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D2818),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                   ),
                 ),
               ],
@@ -5526,6 +5541,255 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
   }
 
   // ==========================================
+  // DIALOG: MANAGE / ADD PRODUCT CATEGORIES
+  // ==========================================
+  void _showManageCategoriesDialogWeb() {
+    final catCtrl = TextEditingController();
+    bool isAdding = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final productProvider = Provider.of<ProductProvider>(context);
+          final rawCategories = productProvider.rawCategories;
+
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Color(0xFFE8F5E9),
+                              child: Icon(Icons.category_rounded, color: Color(0xFF1B5E20), size: 20),
+                            ),
+                            SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Manage Product Categories',
+                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  'उत्पाद श्रेणियां प्रबंधित व नई श्रेणी जोड़ें',
+                                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    const Divider(height: 1),
+                    const SizedBox(height: 18),
+
+                    // Add New Category Section
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAF9),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '+ Add New Category / नई श्रेणी जोड़ें',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: catCtrl,
+                                  decoration: InputDecoration(
+                                    hintText: 'उदा. Dry Fruits & Spices, Household, etc.',
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    prefixIcon: const Icon(Icons.label_outline_rounded, size: 18),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                  onSubmitted: (_) async {
+                                    final val = catCtrl.text.trim();
+                                    if (val.isEmpty) return;
+                                    setDialogState(() => isAdding = true);
+                                    await productProvider.addCategory(val);
+                                    catCtrl.clear();
+                                    setDialogState(() => isAdding = false);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                onPressed: isAdding
+                                    ? null
+                                    : () async {
+                                        final val = catCtrl.text.trim();
+                                        if (val.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('कृपया श्रेणी का नाम दर्ज करें')),
+                                          );
+                                          return;
+                                        }
+                                        setDialogState(() => isAdding = true);
+                                        final success = await productProvider.addCategory(val);
+                                        if (success) {
+                                          catCtrl.clear();
+                                        }
+                                        setDialogState(() => isAdding = false);
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: isAdding
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                      )
+                                    : const Text('+ Add / जोड़ें', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Existing Categories List
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'All Active Categories (${rawCategories.length})',
+                          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Products in category',
+                          style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(8),
+                          itemCount: rawCategories.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, i) {
+                            final cat = rawCategories[i];
+                            final productCount = productProvider.allProducts
+                                .where((p) => p.category.toLowerCase() == cat.toLowerCase())
+                                .length;
+                            final isCustom = productProvider.firestoreCategories
+                                .any((fc) => fc.toLowerCase() == cat.toLowerCase());
+
+                            return ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: AppColors.primary.withAlpha(20),
+                                child: const Icon(Icons.folder_open_rounded, size: 16, color: AppColors.primary),
+                              ),
+                              title: Text(
+                                cat,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: productCount > 0 ? const Color(0xFFE8F5E9) : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '$productCount items',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: productCount > 0 ? const Color(0xFF1B5E20) : Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isCustom) ...[
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                      tooltip: 'Delete category',
+                                      onPressed: () async {
+                                        if (productCount > 0) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  "Cannot delete '$cat' because it has $productCount product(s). Reassign or delete products first."),
+                                              backgroundColor: Colors.orange.shade800,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        await productProvider.deleteCategory(cat);
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Close / बंद करें'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ==========================================
   // DIALOG 6: ADD / EDIT PRODUCT
   // ==========================================
   void _showProductDialogWeb({ProductModel? product}) {
@@ -5561,17 +5825,21 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
     String? uploadStatusMessage;
     bool showManualUrlField = false;
 
-    final categoriesList = [
-      'Edible Oil & Ghee',
-      'Spices & Masala',
-      'Grains & Pulses',
-      'Flours & Atta',
-      'Packaged Goods & Snacks',
-      'Sugar & Salt',
-      'Beverages & Tea',
-      'Cleaning & Hygiene',
-      'Dry Fruits & Nuts',
-    ];
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final categoriesList = List<String>.from(productProvider.rawCategories);
+    if (categoriesList.isEmpty) {
+      categoriesList.addAll([
+        'Edible Oil & Ghee',
+        'Spices & Masala',
+        'Grains & Pulses',
+        'Flours & Atta',
+        'Packaged Goods & Snacks',
+        'Sugar & Salt',
+        'Beverages & Tea',
+        'Cleaning & Hygiene',
+        'Dry Fruits & Nuts',
+      ]);
+    }
 
     String selectedCategory = product?.category ?? categoriesList[0];
     if (!categoriesList.contains(selectedCategory)) {

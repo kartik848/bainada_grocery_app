@@ -3,12 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/product_model.dart';
 import '../services/firestore_service.dart';
+import '../utils/constants.dart';
 
 class ProductProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   StreamSubscription<List<ProductModel>>? _productsSubscription;
+  StreamSubscription<List<String>>? _categoriesSubscription;
 
   List<ProductModel> _allProducts = [];
+  List<String> _firestoreCategories = [];
   String _selectedCategory = 'All Categories';
   String _searchQuery = '';
   bool _isLoading = true;
@@ -19,6 +22,27 @@ class ProductProvider with ChangeNotifier {
   String get searchQuery => _searchQuery;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // Dynamic merged categories list
+  List<String> get categories {
+    final Set<String> set = {'All Categories'};
+    for (final c in AppConstants.productCategories) {
+      if (c.trim().isNotEmpty) set.add(c.trim());
+    }
+    for (final c in _firestoreCategories) {
+      if (c.trim().isNotEmpty) set.add(c.trim());
+    }
+    for (final p in _allProducts) {
+      if (p.category.trim().isNotEmpty) set.add(p.category.trim());
+    }
+    return set.toList();
+  }
+
+  // Categories without 'All Categories'
+  List<String> get rawCategories =>
+      categories.where((c) => c != 'All Categories').toList();
+
+  List<String> get firestoreCategories => _firestoreCategories;
 
   // Filtered products based on category and search query
   List<ProductModel> get filteredProducts {
@@ -46,6 +70,16 @@ class ProductProvider with ChangeNotifier {
 
   ProductProvider() {
     _initProducts();
+    _initCategories();
+  }
+
+  void _initCategories() {
+    _categoriesSubscription?.cancel();
+    _categoriesSubscription =
+        _firestoreService.streamCategories().listen((cats) {
+      _firestoreCategories = cats;
+      notifyListeners();
+    });
   }
 
   void _initProducts() {
@@ -74,6 +108,35 @@ class ProductProvider with ChangeNotifier {
         notifyListeners();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _productsSubscription?.cancel();
+    _categoriesSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<bool> addCategory(String categoryName) async {
+    try {
+      await _firestoreService.addCategory(categoryName);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteCategory(String categoryName) async {
+    try {
+      await _firestoreService.deleteCategory(categoryName);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 
   void setCategory(String category) {
@@ -163,11 +226,5 @@ class ProductProvider with ChangeNotifier {
     } catch (_) {
       return null;
     }
-  }
-
-  @override
-  void dispose() {
-    _productsSubscription?.cancel();
-    super.dispose();
   }
 }

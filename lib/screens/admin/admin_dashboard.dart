@@ -640,9 +640,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   height: 36,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: AppConstants.productCategories.length,
+                    itemCount: productProvider.categories.length + 1,
                     itemBuilder: (ctx, i) {
-                      final cat = AppConstants.productCategories[i];
+                      if (i == productProvider.categories.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ActionChip(
+                            avatar: const Icon(Icons.add, size: 16, color: AppColors.primary),
+                            label: const Text('+ Category', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            backgroundColor: AppColors.primarySurface,
+                            side: const BorderSide(color: AppColors.primary),
+                            onPressed: () => _showAddCategoryDialogMobile(context),
+                          ),
+                        );
+                      }
+                      final cat = productProvider.categories[i];
                       final isSelected =
                           productProvider.selectedCategory == cat;
                       return Padding(
@@ -1083,6 +1095,48 @@ class _AdminDashboardState extends State<AdminDashboard> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => AddProductModal(productToEdit: product),
+    );
+  }
+
+  void _showAddCategoryDialogMobile(BuildContext context) {
+    final catCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.category_rounded, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Add Category / नई श्रेणी',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: TextField(
+          controller: catCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Category Name',
+            hintText: 'e.g. Dry Fruits, Snacks, etc.',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final val = catCtrl.text.trim();
+              if (val.isEmpty) return;
+              final p = Provider.of<ProductProvider>(context, listen: false);
+              await p.addCategory(val);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Add Category'),
+          ),
+        ],
+      ),
     );
   }
 }

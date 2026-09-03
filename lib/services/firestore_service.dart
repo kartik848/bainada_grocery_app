@@ -26,6 +26,8 @@ class FirestoreService {
       _firestore.collection('ledgers');
   CollectionReference<Map<String, dynamic>> get _transactionsRef =>
       _firestore.collection('transactions');
+  CollectionReference<Map<String, dynamic>> get _categoriesRef =>
+      _firestore.collection('categories');
 
   // ==========================================
   // PRODUCTS CRUD & STREAMS
@@ -106,6 +108,39 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs
             .map((doc) => ProductModel.fromMap(doc.data(), doc.id))
             .toList());
+  }
+
+  // ==========================================
+  // CATEGORIES CRUD & STREAMS
+  // ==========================================
+
+  Stream<List<String>> streamCategories() {
+    return _categoriesRef.snapshots().map((snapshot) {
+      final List<String> list = [];
+      for (final doc in snapshot.docs) {
+        final name = (doc.data()['name'] ?? '').toString().trim();
+        if (name.isNotEmpty && !list.contains(name)) {
+          list.add(name);
+        }
+      }
+      return list;
+    });
+  }
+
+  Future<void> addCategory(String categoryName) async {
+    final clean = categoryName.trim();
+    if (clean.isEmpty) return;
+    final docId = clean.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+    await _categoriesRef.doc(docId).set({
+      'name': clean,
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteCategory(String categoryName) async {
+    final clean = categoryName.trim();
+    final docId = clean.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+    await _categoriesRef.doc(docId).delete();
   }
 
   // ==========================================

@@ -1207,12 +1207,9 @@ class _DeliveryOrderCardState extends State<_DeliveryOrderCard> {
                             destinationTitle: order.merchantName,
                           );
                         } else {
-                          final query = Uri.encodeComponent(
-                              '${order.merchantName}, ${order.merchantAddress}');
-                          launchUrl(
-                            Uri.parse(
-                                'https://www.google.com/maps/search/?api=1&query=$query'),
-                            mode: LaunchMode.externalApplication,
+                          LocationService.openGoogleMapsForAddress(
+                            order.merchantAddress,
+                            title: order.merchantName,
                           );
                         }
                       },

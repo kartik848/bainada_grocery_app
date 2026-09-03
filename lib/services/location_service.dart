@@ -143,45 +143,82 @@ class LocationService {
     required double destinationLng,
     String? destinationTitle,
   }) async {
+    final lat = destinationLat;
+    final lng = destinationLng;
+    final title = destinationTitle ?? 'Merchant Delivery Location';
+    debugPrint('[LocationService] Opening Google Maps for coordinates: $lat, $lng ($title)');
+
+    // 1. Android geo: URI with pin & label (Most reliable on Android devices)
     try {
-      // 1. Android geo URI with exact lat,lng pin and title
       final geoUri = Uri.parse(
-        'geo:$destinationLat,$destinationLng?q=$destinationLat,$destinationLng(${Uri.encodeComponent(destinationTitle ?? "Delivery Destination")})',
+        'geo:$lat,$lng?q=$lat,$lng(${Uri.encodeComponent(title)})',
       );
-      if (await canLaunchUrl(geoUri)) {
-        await launchUrl(geoUri, mode: LaunchMode.externalApplication);
-        return true;
-      }
-
-      // 2. Google Maps Navigation intent
-      final navIntentUri = Uri.parse(
-        'google.navigation:q=$destinationLat,$destinationLng&mode=d',
-      );
-      if (await canLaunchUrl(navIntentUri)) {
-        await launchUrl(navIntentUri, mode: LaunchMode.externalApplication);
-        return true;
-      }
-
-      // 3. Driving directions mode (Google Maps Web / App)
-      final navUrl = Uri.parse(
-        'https://www.google.com/maps/dir/?api=1&destination=$destinationLat,$destinationLng&travelmode=driving',
-      );
-      if (await canLaunchUrl(navUrl)) {
-        await launchUrl(navUrl, mode: LaunchMode.externalApplication);
-        return true;
-      }
-
-      // 4. Fallback to coordinate search
-      final searchUrl = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$destinationLat,$destinationLng',
-      );
-      if (await canLaunchUrl(searchUrl)) {
-        await launchUrl(searchUrl, mode: LaunchMode.externalApplication);
+      if (await launchUrl(geoUri, mode: LaunchMode.externalApplication)) {
         return true;
       }
     } catch (e) {
-      debugPrint('[LocationService] Failed to launch Google Maps: $e');
+      debugPrint('[LocationService] geo intent error: $e');
     }
+
+    // 2. Google Maps Native Navigation intent
+    try {
+      final navIntentUri = Uri.parse(
+        'google.navigation:q=$lat,$lng&mode=d',
+      );
+      if (await launchUrl(navIntentUri, mode: LaunchMode.externalApplication)) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[LocationService] google.navigation error: $e');
+    }
+
+    // 3. Web Driving Directions Mode
+    try {
+      final navUrl = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+      );
+      if (await launchUrl(navUrl, mode: LaunchMode.externalApplication)) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[LocationService] maps.google.com/dir error: $e');
+    }
+
+    // 4. Fallback search coordinate URL
+    try {
+      final searchUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+      );
+      if (await launchUrl(searchUrl, mode: LaunchMode.externalApplication)) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[LocationService] maps search error: $e');
+    }
+
+    return false;
+  }
+
+  /// Launch Google Maps for textual address / shop name when coordinates are not available
+  static Future<bool> openGoogleMapsForAddress(String address, {String? title}) async {
+    final queryText = title != null && title.isNotEmpty ? '$title, $address' : address;
+    final encoded = Uri.encodeComponent(queryText);
+    debugPrint('[LocationService] Opening Google Maps for address: $queryText');
+
+    try {
+      final geoUri = Uri.parse('geo:0,0?q=$encoded');
+      if (await launchUrl(geoUri, mode: LaunchMode.externalApplication)) {
+        return true;
+      }
+    } catch (_) {}
+
+    try {
+      final webUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=$encoded');
+      if (await launchUrl(webUrl, mode: LaunchMode.externalApplication)) {
+        return true;
+      }
+    } catch (_) {}
+
     return false;
   }
 }

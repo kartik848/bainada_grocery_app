@@ -4,7 +4,6 @@ import '../models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../services/invoice_service.dart';
 import '../services/location_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 import 'status_badge.dart';
@@ -343,10 +342,9 @@ class OrderCard extends StatelessWidget {
                           destinationTitle: order.merchantName,
                         );
                       } else {
-                        final query = Uri.encodeComponent('${order.merchantName}, ${order.merchantAddress}');
-                        launchUrl(
-                          Uri.parse('https://www.google.com/maps/search/?api=1&query=$query'),
-                          mode: LaunchMode.externalApplication,
+                        LocationService.openGoogleMapsForAddress(
+                          order.merchantAddress,
+                          title: order.merchantName,
                         );
                       }
                     },

@@ -38,6 +38,23 @@ class AppConstants {
   static const String appName = "Bainada Brothers";
   static const String appTagline = "Wholesale Grocery & Kirana Supply";
 
+  // Official Registered GST Details (Government of India Form GST REG-06)
+  static const String companyLegalName = "BAINADA BROTHERS (OPC) PRIVATE LIMITED";
+  static const String companyTradeName = "BAINADA BROTHERS (OPC) PRIVATE LIMITED";
+  static const String companyGstin = "08AANCB2205J1ZQ";
+  static const String companyDirector = "Ajay Meena";
+  static const String companyDirectorDesignation = "Director";
+  static const String constitutionOfBusiness = "One Person Company (OPC) Private Limited";
+  static const String companyRegistrationType = "Regular";
+  static const String companyRegistrationDate = "03/03/2025";
+  static const String companyState = "Rajasthan";
+  static const String companyStateCode = "08";
+  static const String companyPinCode = "302022";
+  static const String companyCity = "Jaipur";
+  static const String companyLocality = "Shree Ram Ki Nangal";
+  static const String companyAddress =
+      "Nanag Ram Watika Road, Shree Ram Ki Nangal, Jaipur, Rajasthan - 302022";
+
   static const List<String> productCategories = [
     'All Categories',
     'Grains & Rice',

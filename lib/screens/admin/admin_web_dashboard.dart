@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
@@ -103,6 +104,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                       _buildMerchantsKhataContent(),
                       _buildSalesmenPerformanceContent(),
                       _buildCashSettlementContent(),
+                      _buildCompanyGstProfileContent(),
                     ],
                   ),
                 ),
@@ -166,6 +168,8 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                     5, 'Salesmen Performance', Icons.trending_up_rounded),
                 _buildSidebarNavItem(
                     6, 'Cash Settlements (COD)', Icons.payments_rounded),
+                _buildSidebarNavItem(
+                    7, 'GST & Company Profile', Icons.verified_user_rounded),
               ],
             ),
           ),
@@ -301,6 +305,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
       'Kirana Merchants & Khata Credit Ledger',
       'Salesmen Performance & Turnover Analytics',
       'COD Cash Settlements & Fleet Handover',
+      'Official GST & Company Registration Profile',
     ];
 
     final String currentTitle =
@@ -332,29 +337,33 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
               const _LiveDateTimeWidget(),
               const SizedBox(width: 16),
 
-              // GST Online Badge
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.primary.withAlpha(80)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle,
-                        size: 14, color: AppColors.primary),
-                    SizedBox(width: 6),
-                    Text(
-                      'GST B2B System Online',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+              // Interactive Verified GST Badge
+              InkWell(
+                onTap: () => setState(() => _selectedNavIndex = 7),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySurface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primary.withAlpha(100)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.verified,
+                          size: 15, color: AppColors.primary),
+                      SizedBox(width: 6),
+                      Text(
+                        'GST: 08AANCB2205J1ZQ (Verified)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryDark,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -3050,6 +3059,425 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
   // ==========================================
   Widget _buildCashSettlementContent() {
     return const CashSettlementTab();
+  }
+
+  // ==========================================
+  // 7. OFFICIAL GST & COMPANY PROFILE
+  // ==========================================
+  Widget _buildCompanyGstProfileContent() {
+    Widget buildInfoTile(String label, String value,
+        {bool copyable = false, IconData? icon, Color? highlightColor}) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null) ...[
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (highlightColor ?? AppColors.primary).withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon,
+                    size: 18, color: highlightColor ?? AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: highlightColor ?? AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (copyable)
+              IconButton(
+                icon: const Icon(Icons.copy_rounded,
+                    size: 16, color: AppColors.primary),
+                tooltip: 'Copy $label',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: value));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$label copied to clipboard: $value'),
+                      duration: const Duration(seconds: 2),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Government Header Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0D2818), Color(0xFF1B5E20)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.verified_rounded,
+                      size: 36, color: Colors.white),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: const Text(
+                              'FORM GST REG-06 • REGULAR TAXPAYER',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(30),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Active since 03/03/2025',
+                              style: TextStyle(
+                                  color: Colors.white70, fontSize: 11),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        AppConstants.companyLegalName,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Authorized B2B Wholesale Grocery & Kirana Super-Stockist (Government of India Registration)',
+                        style: TextStyle(fontSize: 13, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white30),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('OFFICIAL GSTIN',
+                          style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text(
+                            AppConstants.companyGstin,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(const ClipboardData(
+                                  text: AppConstants.companyGstin));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text('GSTIN copied to clipboard!')),
+                              );
+                            },
+                            child: const Icon(Icons.copy_rounded,
+                                color: Colors.white, size: 16),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Details Grid
+          const Text(
+            'Statutory Registration Particulars',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    buildInfoTile(
+                        'Legal Name', AppConstants.companyLegalName,
+                        icon: Icons.business_rounded),
+                    const SizedBox(height: 10),
+                    buildInfoTile(
+                        'Trade Name', AppConstants.companyTradeName,
+                        icon: Icons.store_rounded),
+                    const SizedBox(height: 10),
+                    buildInfoTile('Registration Number (GSTIN)',
+                        AppConstants.companyGstin,
+                        copyable: true,
+                        icon: Icons.badge_rounded,
+                        highlightColor: AppColors.primary),
+                    const SizedBox(height: 10),
+                    buildInfoTile('Constitution of Business',
+                        AppConstants.constitutionOfBusiness,
+                        icon: Icons.account_balance_rounded),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  children: [
+                    buildInfoTile(
+                        'Director / Key Person',
+                        '${AppConstants.companyDirector} (${AppConstants.companyDirectorDesignation})',
+                        icon: Icons.person_pin_rounded),
+                    const SizedBox(height: 10),
+                    buildInfoTile('Registration Type',
+                        '${AppConstants.companyRegistrationType} Taxpayer',
+                        icon: Icons.verified_rounded),
+                    const SizedBox(height: 10),
+                    buildInfoTile('Date of Validity / Issue',
+                        '${AppConstants.companyRegistrationDate} (Active)',
+                        icon: Icons.event_available_rounded),
+                    const SizedBox(height: 10),
+                    buildInfoTile('State & Jurisdiction',
+                        '${AppConstants.companyState} (State Code: ${AppConstants.companyStateCode})',
+                        icon: Icons.map_rounded),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Principal Place of Business Address
+          const Text(
+            'Principal Place of Business (Registered Office & Mandi Godown)',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.location_on_rounded,
+                      color: Color(0xFF1B5E20), size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppConstants.companyAddress,
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary),
+                      ),
+                      SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          Chip(
+                            label: Text('Road: Nanag Ram Watika Road',
+                                style: TextStyle(fontSize: 11)),
+                            backgroundColor: Color(0xFFF1F5F9),
+                            padding: EdgeInsets.zero,
+                          ),
+                          Chip(
+                            label: Text('Area: Shree Ram Ki Nangal',
+                                style: TextStyle(fontSize: 11)),
+                            backgroundColor: Color(0xFFF1F5F9),
+                            padding: EdgeInsets.zero,
+                          ),
+                          Chip(
+                            label: Text('City: Jaipur',
+                                style: TextStyle(fontSize: 11)),
+                            backgroundColor: Color(0xFFF1F5F9),
+                            padding: EdgeInsets.zero,
+                          ),
+                          Chip(
+                            label: Text('PIN: 302022',
+                                style: TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.bold)),
+                            backgroundColor: Color(0xFFF1F5F9),
+                            padding: EdgeInsets.zero,
+                          ),
+                          Chip(
+                            label: Text('State: Rajasthan (08)',
+                                style: TextStyle(fontSize: 11)),
+                            backgroundColor: Color(0xFFF1F5F9),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, color: AppColors.primary),
+                  tooltip: 'Copy Full Address',
+                  onPressed: () {
+                    Clipboard.setData(const ClipboardData(
+                        text: AppConstants.companyAddress));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Address copied to clipboard!')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Compliance & Tax Invoicing Rules Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDFA),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF99F6E4)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.receipt_long_rounded,
+                    color: Color(0xFF0F766E), size: 28),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Automated B2B Tax Invoicing & GST Compliance',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF134E4A)),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'All PDF invoices issued through this portal automatically embed BAINADA BROTHERS (OPC) PRIVATE LIMITED legal entity details, registered GSTIN (08AANCB2205J1ZQ), Rajasthan State Code 08, CGST/SGST intra-state breakup, and HSN tax summary table.',
+                        style:
+                            TextStyle(fontSize: 12, color: Color(0xFF115E59)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddUserDialog({UserModel? user}) async {

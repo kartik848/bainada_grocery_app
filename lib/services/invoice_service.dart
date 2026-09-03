@@ -27,10 +27,13 @@ class KhataStatementEntry {
 }
 
 class InvoiceService {
-  static const String companyName = 'Bainada Brothers Wholesale';
-  static const String companyTagline = 'Authorized B2B Grocery & Kirana Super-Stockist';
-  static const String companyAddress = 'Shop No. 1-4, Central Mandi Yard, Station Road, Jaipur, RJ - 302006';
-  static const String companyGstin = '08AAACB9876F1Z2';
+  static const String companyName = 'BAINADA BROTHERS (OPC) PRIVATE LIMITED';
+  static const String companyTradeName = 'BAINADA BROTHERS (OPC) PRIVATE LIMITED';
+  static const String companyTagline = 'Wholesale Grocery & Kirana Super-Stockist';
+  static const String companyAddress =
+      'Nanag Ram Watika Road, Shree Ram Ki Nangal, Jaipur, Rajasthan - 302022';
+  static const String companyGstin = '08AANCB2205J1ZQ';
+  static const String companyDirector = 'Ajay Meena';
   static const String companyPhone = '+91 98290 99999';
   static const String companyEmail = 'orders@bainada.com';
   static const String stateCode = '08 (Rajasthan)';

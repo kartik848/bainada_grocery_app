@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/firestore_service.dart';
+import '../../services/location_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/bainada_logo.dart';
@@ -1126,6 +1127,100 @@ class _DeliveryOrderCardState extends State<_DeliveryOrderCard> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+
+            // 📍 Live Order Location & Google Maps Direct Navigation (Blinkit Style)
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF86EFAC)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.gps_fixed_rounded,
+                          size: 15, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 6),
+                      Text(
+                        order.deliveryLatitude != null
+                            ? 'Live Order GPS Tagged'
+                            : 'Registered Store Location',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF15803D),
+                        ),
+                      ),
+                      const Spacer(),
+                      if (order.deliveryLatitude != null &&
+                          order.deliveryLongitude != null)
+                        Text(
+                          '${order.deliveryLatitude!.toStringAsFixed(4)}, ${order.deliveryLongitude!.toStringAsFixed(4)}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF166534),
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (order.liveLocationAddress != null &&
+                      order.liveLocationAddress!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      order.liveLocationAddress!,
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF166534)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        if (order.deliveryLatitude != null &&
+                            order.deliveryLongitude != null) {
+                          LocationService.openGoogleMapsNavigation(
+                            destinationLat: order.deliveryLatitude!,
+                            destinationLng: order.deliveryLongitude!,
+                            destinationTitle: order.merchantName,
+                          );
+                        } else {
+                          final query = Uri.encodeComponent(
+                              '${order.merchantName}, ${order.merchantAddress}');
+                          launchUrl(
+                            Uri.parse(
+                                'https://www.google.com/maps/search/?api=1&query=$query'),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.navigation_rounded,
+                          size: 16, color: Colors.white),
+                      label: const Text(
+                        '🗺️ Navigate on Google Maps (रास्ता देखें)',
+                        style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF15803D),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
 

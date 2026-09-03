@@ -58,6 +58,9 @@ class UserModel {
   final String? licenseNumber; // For Delivery Boy
   final double pendingCashInHand; // For Delivery Boy: COD cash currently held
   final double totalCashSettled; // For Delivery Boy: Total cash handed over to Admin
+  final double? latitude; // Merchant GPS Latitude
+  final double? longitude; // Merchant GPS Longitude
+  final String? locationAddress; // Reverse geocoded address
   final bool isApproved;
   final bool isActive;
   final DateTime createdAt;
@@ -85,6 +88,9 @@ class UserModel {
     this.licenseNumber,
     this.pendingCashInHand = 0.0,
     this.totalCashSettled = 0.0,
+    this.latitude,
+    this.longitude,
+    this.locationAddress,
     this.isApproved = true,
     this.isActive = true,
     required this.createdAt,
@@ -210,6 +216,15 @@ class UserModel {
       licenseNumber: (map['licenseNumber'] ?? map['licenseNo'])?.toString(),
       pendingCashInHand: parseDouble(map['pendingCashInHand'] ?? map['cashInHand'], 0.0),
       totalCashSettled: parseDouble(map['totalCashSettled'] ?? map['cashSettled'], 0.0),
+      latitude: map['latitude'] != null
+          ? parseDouble(map['latitude'])
+          : (map['lat'] != null ? parseDouble(map['lat']) : null),
+      longitude: map['longitude'] != null
+          ? parseDouble(map['longitude'])
+          : (map['lng'] != null ? parseDouble(map['lng']) : null),
+      locationAddress: map['locationAddress']?.toString() ??
+          map['geoAddress']?.toString() ??
+          map['liveLocationAddress']?.toString(),
       isApproved: parseBool(map['isApproved'], true),
       isActive: parseBool(map['isActive'], true),
       createdAt: parsedCreatedAt,
@@ -242,6 +257,9 @@ class UserModel {
       'licenseNumber': licenseNumber,
       'pendingCashInHand': pendingCashInHand,
       'totalCashSettled': totalCashSettled,
+      'latitude': latitude,
+      'longitude': longitude,
+      'locationAddress': locationAddress,
       'isApproved': isApproved,
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -271,6 +289,9 @@ class UserModel {
     String? licenseNumber,
     double? pendingCashInHand,
     double? totalCashSettled,
+    double? latitude,
+    double? longitude,
+    String? locationAddress,
     bool? isApproved,
     bool? isActive,
     DateTime? createdAt,
@@ -298,6 +319,9 @@ class UserModel {
       licenseNumber: licenseNumber ?? this.licenseNumber,
       pendingCashInHand: pendingCashInHand ?? this.pendingCashInHand,
       totalCashSettled: totalCashSettled ?? this.totalCashSettled,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      locationAddress: locationAddress ?? this.locationAddress,
       isApproved: isApproved ?? this.isApproved,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,

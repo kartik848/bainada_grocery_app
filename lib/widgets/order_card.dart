@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../models/order_model.dart';
 import '../providers/order_provider.dart';
 import '../services/invoice_service.dart';
+import '../services/location_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 import 'status_badge.dart';
@@ -327,6 +329,42 @@ class OrderCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 12, color: AppColors.primaryDark, fontWeight: FontWeight.w600),
                   ),
                 ],
+
+                const SizedBox(height: 10),
+                // Google Maps Location & Navigation Button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      if (order.deliveryLatitude != null && order.deliveryLongitude != null) {
+                        LocationService.openGoogleMapsNavigation(
+                          destinationLat: order.deliveryLatitude!,
+                          destinationLng: order.deliveryLongitude!,
+                          destinationTitle: order.merchantName,
+                        );
+                      } else {
+                        final query = Uri.encodeComponent('${order.merchantName}, ${order.merchantAddress}');
+                        launchUrl(
+                          Uri.parse('https://www.google.com/maps/search/?api=1&query=$query'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.near_me_rounded, size: 16, color: Color(0xFF15803D)),
+                    label: Text(
+                      order.deliveryLatitude != null
+                          ? '🗺️ Google Maps Navigation (${order.deliveryLatitude!.toStringAsFixed(3)}, ${order.deliveryLongitude!.toStringAsFixed(3)})'
+                          : '🗺️ Open Location on Google Maps',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF86EFAC), width: 1.2),
+                      backgroundColor: const Color(0xFFF0FDF4),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 14),
                 const Divider(),

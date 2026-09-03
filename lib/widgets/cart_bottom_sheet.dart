@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/order_provider.dart';
 import '../providers/product_provider.dart';
+import '../services/location_service.dart';
 import '../utils/constants.dart';
 import '../utils/currency_formatter.dart';
 
@@ -623,7 +624,34 @@ class _CheckoutModalState extends State<CheckoutModal> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 14),
+
+                        // Live Location Tag Indicator (Blinkit Style)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0FDF4),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.gps_fixed_rounded, size: 14, color: Color(0xFF16A34A)),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Live GPS tagged for Delivery Partner navigation (Blinkit Style)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF15803D),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
 
                         // Place Order Button
                         SizedBox(
@@ -637,6 +665,14 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
                                     final isSalesman = auth.isSalesman;
 
+                                    // 📍 Live GPS location capture at time of ordering (Blinkit Style)
+                                    LocationDataResult? liveLoc;
+                                    try {
+                                      liveLoc = await LocationService().getLiveLocationDetails();
+                                    } catch (e) {
+                                      debugPrint('[Checkout] Location fetch error: $e');
+                                    }
+
                                     final orderId = await orderProvider.placeOrder(
                                       merchant: effectiveMerchant,
                                       salesman: isSalesman ? auth.currentUserModel : null,
@@ -648,6 +684,9 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                       grandTotal: cart.grandTotal,
                                       paymentType: cart.paymentType,
                                       notes: _notesController.text.trim(),
+                                      deliveryLatitude: liveLoc?.latitude,
+                                      deliveryLongitude: liveLoc?.longitude,
+                                      liveLocationAddress: liveLoc?.address,
                                     );
 
                                     setState(() => _isSubmitting = false);

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/user_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/location_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 
@@ -38,6 +39,50 @@ class _AddMerchantScreenState extends State<AddMerchantScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
+
+  // GPS Location state
+  double? _latitude;
+  double? _longitude;
+  String? _detectedAddress;
+  bool _isFetchingLocation = false;
+
+  Future<void> _fetchCurrentLocation() async {
+    setState(() => _isFetchingLocation = true);
+    try {
+      final loc = await LocationService().getLiveLocationDetails();
+      if (loc != null) {
+        setState(() {
+          _latitude = loc.latitude;
+          _longitude = loc.longitude;
+          _detectedAddress = loc.address;
+          if (_addressCtrl.text.trim().isEmpty && loc.address != null) {
+            _addressCtrl.text = loc.address!;
+          }
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('दुकान की लोकेशन मैप से सफलतापूर्वक टैग हो गई! (GPS Tagged)'),
+              backgroundColor: Color(0xFF1B5E20),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('लोकेशन नहीं मिल सकी। कृपया फोन का GPS / Location On करें।'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Location fetch error: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingLocation = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -173,6 +218,9 @@ _Bainada Brothers Wholesale, Jaipur_
       minOrderLimit: minOrder,
       addedBySalesmanId: currentSalesman?.uid,
       addedBySalesmanName: currentSalesman?.name,
+      latitude: _latitude,
+      longitude: _longitude,
+      locationAddress: _detectedAddress,
       isApproved: true,
       isActive: true,
       createdAt: DateTime.now(),
@@ -453,6 +501,140 @@ _Bainada Brothers Wholesale, Jaipur_
                   if (clean.length < 10) return 'Enter valid 10-digit number';
                   return null;
                 },
+              ),
+              const SizedBox(height: 12),
+
+              // 📍 GPS Shop Location Tagging (Blinkit Style)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _latitude != null
+                      ? const Color(0xFFF0FDF4)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _latitude != null
+                        ? const Color(0xFF86EFAC)
+                        : AppColors.border,
+                    width: _latitude != null ? 1.5 : 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _latitude != null
+                              ? Icons.check_circle_rounded
+                              : Icons.my_location_rounded,
+                          size: 20,
+                          color: _latitude != null
+                              ? const Color(0xFF16A34A)
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _latitude != null
+                                ? 'दुकान की लोकेशन मैप से लिंक हो गई (GPS Tagged)'
+                                : 'Shop GPS Location / दुकान की लोकेशन मैप से लें',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _latitude != null
+                                  ? const Color(0xFF15803D)
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_latitude != null && _longitude != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'GPS Coordinates: ${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
+                        style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF166534)),
+                      ),
+                      if (_detectedAddress != null &&
+                          _detectedAddress!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _detectedAddress!,
+                          style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF166534)),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isFetchingLocation
+                                ? null
+                                : _fetchCurrentLocation,
+                            icon: _isFetchingLocation
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white),
+                                  )
+                                : Icon(
+                                    _latitude != null
+                                        ? Icons.refresh_rounded
+                                        : Icons.near_me_rounded,
+                                    size: 16),
+                            label: Text(
+                              _latitude != null
+                                  ? 'अपडेट करें (Re-tag GPS)'
+                                  : 'वर्तमान लोकेशन लें (GPS Auto-Detect)',
+                              style: const TextStyle(
+                                  fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _latitude != null
+                                  ? const Color(0xFF16A34A)
+                                  : AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 12),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                        if (_latitude != null && _longitude != null) ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              LocationService.openGoogleMapsNavigation(
+                                destinationLat: _latitude!,
+                                destinationLng: _longitude!,
+                              );
+                            },
+                            icon: const Icon(Icons.map_rounded, size: 16),
+                            label: const Text('मैप देखें',
+                                style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 10, horizontal: 10),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
 

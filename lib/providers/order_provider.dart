@@ -154,12 +154,20 @@ class OrderProvider with ChangeNotifier {
     required double grandTotal,
     required PaymentType paymentType,
     String? notes,
+    double? deliveryLatitude,
+    double? deliveryLongitude,
+    String? liveLocationAddress,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
+      final double? finalLat = deliveryLatitude ?? merchant.latitude;
+      final double? finalLng = deliveryLongitude ?? merchant.longitude;
+      final String? finalLocationAddr =
+          liveLocationAddress ?? merchant.locationAddress;
+
       final newOrder = OrderModel(
         id: '',
         invoiceNumber: '',
@@ -183,6 +191,11 @@ class OrderProvider with ChangeNotifier {
         paymentType: paymentType,
         isPaid: paymentType == PaymentType.online,
         notes: notes,
+        deliveryLatitude: finalLat,
+        deliveryLongitude: finalLng,
+        liveLocationAddress: finalLocationAddr,
+        liveLocationCapturedAt:
+            (finalLat != null && finalLng != null) ? DateTime.now() : null,
         createdAt: DateTime.now(),
       );
 

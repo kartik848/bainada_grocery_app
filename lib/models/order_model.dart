@@ -255,6 +255,10 @@ class OrderModel {
   final bool isPaid;
   final String? cancelReason;
   final String? notes;
+  final double? deliveryLatitude; // Live GPS Latitude captured at order placement
+  final double? deliveryLongitude; // Live GPS Longitude captured at order placement
+  final String? liveLocationAddress; // Live reverse-geocoded delivery address
+  final DateTime? liveLocationCapturedAt;
   final DateTime createdAt;
   final DateTime? approvedAt;
   final DateTime? deliveredAt;
@@ -283,6 +287,10 @@ class OrderModel {
     this.isPaid = false,
     this.cancelReason,
     this.notes,
+    this.deliveryLatitude,
+    this.deliveryLongitude,
+    this.liveLocationAddress,
+    this.liveLocationCapturedAt,
     required this.createdAt,
     this.approvedAt,
     this.deliveredAt,
@@ -404,6 +412,20 @@ class OrderModel {
       isPaid: map['isPaid'] ?? false,
       cancelReason: map['cancelReason'],
       notes: map['notes'],
+      deliveryLatitude: (map['deliveryLatitude'] as num?)?.toDouble() ??
+          (map['latitude'] as num?)?.toDouble() ??
+          (map['lat'] as num?)?.toDouble(),
+      deliveryLongitude: (map['deliveryLongitude'] as num?)?.toDouble() ??
+          (map['longitude'] as num?)?.toDouble() ??
+          (map['lng'] as num?)?.toDouble(),
+      liveLocationAddress: map['liveLocationAddress']?.toString() ??
+          map['locationAddress']?.toString() ??
+          map['geoAddress']?.toString(),
+      liveLocationCapturedAt: map['liveLocationCapturedAt'] is Timestamp
+          ? (map['liveLocationCapturedAt'] as Timestamp).toDate()
+          : (map['liveLocationCapturedAt'] is String
+              ? DateTime.tryParse(map['liveLocationCapturedAt'])
+              : null),
       createdAt: parsedCreatedAt,
       approvedAt: parsedApprovedAt,
       deliveredAt: parsedDeliveredAt,
@@ -439,6 +461,14 @@ class OrderModel {
       'isPaid': isPaid,
       'cancelReason': cancelReason,
       'notes': notes,
+      'deliveryLatitude': deliveryLatitude,
+      'deliveryLongitude': deliveryLongitude,
+      'latitude': deliveryLatitude,
+      'longitude': deliveryLongitude,
+      'liveLocationAddress': liveLocationAddress,
+      'liveLocationCapturedAt': liveLocationCapturedAt != null
+          ? Timestamp.fromDate(liveLocationCapturedAt!)
+          : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'approvedAt': approvedAt != null ? Timestamp.fromDate(approvedAt!) : null,
       'deliveredAt':
@@ -470,6 +500,10 @@ class OrderModel {
     bool? isPaid,
     String? cancelReason,
     String? notes,
+    double? deliveryLatitude,
+    double? deliveryLongitude,
+    String? liveLocationAddress,
+    DateTime? liveLocationCapturedAt,
     DateTime? createdAt,
     DateTime? approvedAt,
     DateTime? deliveredAt,
@@ -498,6 +532,11 @@ class OrderModel {
       isPaid: isPaid ?? this.isPaid,
       cancelReason: cancelReason ?? this.cancelReason,
       notes: notes ?? this.notes,
+      deliveryLatitude: deliveryLatitude ?? this.deliveryLatitude,
+      deliveryLongitude: deliveryLongitude ?? this.deliveryLongitude,
+      liveLocationAddress: liveLocationAddress ?? this.liveLocationAddress,
+      liveLocationCapturedAt:
+          liveLocationCapturedAt ?? this.liveLocationCapturedAt,
       createdAt: createdAt ?? this.createdAt,
       approvedAt: approvedAt ?? this.approvedAt,
       deliveredAt: deliveredAt ?? this.deliveredAt,

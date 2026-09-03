@@ -50,6 +50,7 @@ dependencies:
   http: ^1.2.2
   firebase_database: ^11.1.4
   dio: ^5.7.0
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:

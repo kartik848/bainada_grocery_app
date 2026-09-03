@@ -28,55 +28,23 @@ class BainadaBrandLogo extends StatelessWidget {
       width: emblemSize,
       height: emblemSize,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2E7D32), // Emerald Forest Green
-            Color(0xFF1B5E20), // Deep Forest Green
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(emblemSize * 0.28),
+        borderRadius: BorderRadius.circular(emblemSize * 0.26),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1B5E20).withAlpha(80),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFF81C784).withAlpha(140),
-          width: 1.5,
-        ),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Store / Grocery icon
-          Icon(
-            Icons.storefront_rounded,
-            size: emblemSize * 0.56,
-            color: Colors.white,
-          ),
-          // Verified wholesale badge
-          Positioned(
-            right: emblemSize * 0.05,
-            bottom: emblemSize * 0.05,
-            child: Container(
-              padding: EdgeInsets.all(emblemSize * 0.03),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFA000), // Amber Wholesale Badge
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.2),
-              ),
-              child: Icon(
-                Icons.check_rounded,
-                size: emblemSize * 0.22,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(emblemSize * 0.26),
+        child: Image.asset(
+          'assets/images/app_logo.png',
+          width: emblemSize,
+          height: emblemSize,
+          fit: BoxFit.contain,
+        ),
       ),
     );
 

@@ -366,9 +366,37 @@ class FirestoreService {
     return streamAllUsers(role: role);
   }
 
-  Stream<List<UserModel>> streamMerchantsBySalesman(String salesmanId) {
+  Stream<List<UserModel>> streamMerchantsBySalesman(
+    String salesmanId, {
+    String? salesmanPhone,
+    String? salesmanName,
+  }) {
+    final sId = salesmanId.trim();
+    final sPhone = (salesmanPhone ?? '').replaceAll(RegExp(r'\D'), '');
+    final sName = (salesmanName ?? '').trim().toLowerCase();
+
     return streamAllUsers(role: UserRole.merchant).map((list) {
-      return list.where((u) => u.addedBySalesmanId == salesmanId).toList();
+      return list.where((u) {
+        final mSalesmanId = u.addedBySalesmanId?.trim();
+        final mSalesmanName = u.addedBySalesmanName?.trim().toLowerCase();
+
+        if (mSalesmanId != null && mSalesmanId.isNotEmpty && mSalesmanId == sId) {
+          return true;
+        }
+        if (sPhone.isNotEmpty &&
+            mSalesmanId != null &&
+            mSalesmanId.isNotEmpty &&
+            mSalesmanId == sPhone) {
+          return true;
+        }
+        if (sName.isNotEmpty &&
+            mSalesmanName != null &&
+            mSalesmanName.isNotEmpty &&
+            mSalesmanName == sName) {
+          return true;
+        }
+        return false;
+      }).toList();
     });
   }
 

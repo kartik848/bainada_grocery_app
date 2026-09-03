@@ -81,9 +81,10 @@ class _CashSettlementTabState extends State<CashSettlementTab> {
               return acc + cash;
             });
 
-            final totalSettled = deliveryPartners.fold(
-                    0.0, (acc, d) => acc + d.totalCashSettled) +
-                settlements.fold(0.0, (acc, s) => acc + s.amountSettled);
+            final totalSettled = settlements.isNotEmpty
+                ? settlements.fold(0.0, (acc, s) => acc + s.amountSettled)
+                : deliveryPartners.fold(
+                    0.0, (acc, d) => acc + d.totalCashSettled);
 
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),

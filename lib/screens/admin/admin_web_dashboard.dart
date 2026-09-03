@@ -2721,16 +2721,81 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
             final now = DateTime.now();
             final allOrders = orderProvider.orders;
 
-            final totalOrdersMonth = allOrders
-                .where((o) =>
-                    o.createdAt.month == now.month &&
-                    o.createdAt.year == now.year &&
-                    o.status != OrderStatus.cancelled)
-                .fold(0.0, (acc, o) => acc + o.grandTotal);
+            // Compute real performance metrics per salesman (matching the mobile app logic)
+            final List<Map<String, dynamic>> salesmanData = salesmen.map((salesman) {
+              final sId = salesman.uid.trim();
+              final sPhone = salesman.phone.replaceAll(RegExp(r'\D'), '');
+              final sName = salesman.name.trim().toLowerCase();
 
-            final displayTurnover = totalOrdersMonth;
-            final topSalesmanName =
-                salesmen.isNotEmpty ? salesmen.first.name : '—';
+              // 1. Onboarded Merchants - strictly matching by salesman UID, phone, or name
+              final onboardedMerchants = merchants.where((m) {
+                final mSalesmanId = m.addedBySalesmanId?.trim();
+                final mSalesmanName = m.addedBySalesmanName?.trim().toLowerCase();
+
+                if (mSalesmanId != null && mSalesmanId.isNotEmpty && mSalesmanId == sId) return true;
+                if (sPhone.isNotEmpty && mSalesmanId != null && mSalesmanId.isNotEmpty && mSalesmanId == sPhone) return true;
+                if (mSalesmanName != null && mSalesmanName.isNotEmpty && mSalesmanName == sName) return true;
+                return false;
+              }).toList();
+
+              final onboardedMerchantIds = onboardedMerchants.map((m) => m.uid).toSet();
+
+              // 2. Attributed Orders - matching by salesman ID, phone, name, or orders placed by onboarded merchants
+              final attributedOrders = allOrders.where((o) {
+                if (o.status == OrderStatus.cancelled) return false;
+                final oSalesmanId = o.salesmanId?.trim();
+                final oSalesmanName = o.salesmanName?.trim().toLowerCase();
+
+                if (oSalesmanId != null && oSalesmanId.isNotEmpty && (oSalesmanId == sId || (sPhone.isNotEmpty && oSalesmanId == sPhone))) {
+                  return true;
+                }
+                if (oSalesmanName != null && oSalesmanName.isNotEmpty && oSalesmanName == sName) {
+                  return true;
+                }
+                if (onboardedMerchantIds.contains(o.merchantId)) {
+                  return true;
+                }
+                return false;
+              }).toList();
+
+              final monthOrders = attributedOrders.where((o) =>
+                  o.createdAt.month == now.month &&
+                  o.createdAt.year == now.year).toList();
+
+              final double monthSales = monthOrders.fold(0.0, (acc, o) => acc + o.grandTotal);
+              final double lifetimeSales = attributedOrders.fold(0.0, (acc, o) => acc + o.grandTotal);
+              final double commRate = salesman.commissionRate > 0 ? salesman.commissionRate : 2.0;
+              final double monthComm = monthSales * (commRate / 100.0);
+              final double lifetimeComm = lifetimeSales * (commRate / 100.0);
+
+              return {
+                'salesman': salesman,
+                'onboardedMerchants': onboardedMerchants,
+                'attributedOrders': attributedOrders,
+                'monthOrders': monthOrders,
+                'monthSales': monthSales,
+                'lifetimeSales': lifetimeSales,
+                'commRate': commRate,
+                'monthComm': monthComm,
+                'lifetimeComm': lifetimeComm,
+              };
+            }).toList();
+
+            final totalFieldTurnover = salesmanData.fold<double>(
+                0.0, (acc, d) => acc + (d['monthSales'] as double));
+
+            final sortedBySales = List<Map<String, dynamic>>.from(salesmanData)
+              ..sort((a, b) => (b['monthSales'] as double).compareTo(a['monthSales'] as double));
+
+            final topSalesman = sortedBySales.isNotEmpty ? sortedBySales.first : null;
+            final String topSalesmanName;
+            if (topSalesman != null && (topSalesman['monthSales'] as double) > 0) {
+              topSalesmanName = '${(topSalesman['salesman'] as UserModel).name} (${CurrencyFormatter.format(topSalesman['monthSales'])})';
+            } else if (salesmen.isNotEmpty) {
+              topSalesmanName = salesmen.first.name;
+            } else {
+              topSalesmanName = '—';
+            }
 
             return ListView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -2762,7 +2827,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                           width: cardWidth,
                           child: _buildWebMetricCard(
                             title: 'Field Sales Turnover (This Month)',
-                            value: CurrencyFormatter.format(displayTurnover),
+                            value: CurrencyFormatter.format(totalFieldTurnover),
                             subtitle: 'Aggregated from Onboarded Kiranas',
                             icon: Icons.trending_up_rounded,
                             color: const Color(0xFF1B5E20),
@@ -2857,51 +2922,15 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
                                 ],
-                                rows: salesmen.map((salesman) {
-                                  final onboardedMerchants = merchants
-                                      .where((m) =>
-                                          m.addedBySalesmanId == salesman.uid)
-                                      .toList();
-                                  final onboardedMerchantIds =
-                                      onboardedMerchants
-                                          .map((m) => m.uid)
-                                          .toSet();
-
-                                  final attributedOrders = allOrders
-                                      .where((o) =>
-                                          (o.salesmanId == salesman.uid ||
-                                              onboardedMerchantIds
-                                                  .contains(o.merchantId)) &&
-                                          o.status != OrderStatus.cancelled)
-                                      .toList();
-
-                                  final monthOrders = attributedOrders
-                                      .where((o) =>
-                                          o.createdAt.month == now.month &&
-                                          o.createdAt.year == now.year)
-                                      .toList();
-
-                                  final monthSales = monthOrders.fold(
-                                      0.0, (acc, o) => acc + o.grandTotal);
-                                  final lifetimeSales = attributedOrders.fold(
-                                      0.0, (acc, o) => acc + o.grandTotal);
-
-                                  final displayOnboardedCount =
-                                      onboardedMerchants.isNotEmpty
-                                          ? onboardedMerchants.length
-                                          : 1;
-                                  final displayMonthSales =
-                                      monthSales > 0 ? monthSales : 54200.0;
-                                  final displayLifetimeSales = lifetimeSales > 0
-                                      ? lifetimeSales
-                                      : 185400.0;
-                                  final commRate = salesman.commissionRate > 0
-                                      ? salesman.commissionRate
-                                      : 2.0;
-                                  final monthComm =
-                                      displayMonthSales * (commRate / 100.0);
-                                  final lifetimeComm =
-                                      displayLifetimeSales * (commRate / 100.0);
+                                rows: salesmanData.map((data) {
+                                  final salesman = data['salesman'] as UserModel;
+                                  final onboardedMerchants = data['onboardedMerchants'] as List<UserModel>;
+                                  final attributedOrders = data['attributedOrders'] as List<OrderModel>;
+                                  final monthSales = data['monthSales'] as double;
+                                  final monthComm = data['monthComm'] as double;
+                                  final lifetimeSales = data['lifetimeSales'] as double;
+                                  final lifetimeComm = data['lifetimeComm'] as double;
+                                  final commRate = data['commRate'] as double;
 
                                   return DataRow(
                                     cells: [
@@ -2948,7 +2977,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                               borderRadius:
                                                   BorderRadius.circular(6)),
                                           child: Text(
-                                              '$displayOnboardedCount Kirana Stores',
+                                              '${onboardedMerchants.length} Kirana Stores',
                                               style: TextStyle(
                                                   fontWeight: FontWeight.bold,
                                                   color: Colors.blue.shade900,
@@ -2995,7 +3024,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                       ),
                                       DataCell(Text(
                                           CurrencyFormatter.format(
-                                              displayMonthSales),
+                                              monthSales),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Colors.green))),
@@ -3006,7 +3035,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                               color: Color(0xFFE65100)))),
                                       DataCell(Text(
                                           CurrencyFormatter.format(
-                                              displayLifetimeSales),
+                                              lifetimeSales),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.w900,
                                               color: AppColors.primaryDark))),

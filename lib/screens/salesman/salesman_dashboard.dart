@@ -667,9 +667,11 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
     final currentUser = auth.currentUserModel;
 
     final now = DateTime.now();
+    final myMerchantIds = _merchants.map((m) => m.uid).toSet();
     final thisMonthOrders = orderProvider.orders
         .where((o) =>
-            (o.salesmanId == currentUser?.uid || o.salesmanId == null) &&
+            (o.salesmanId == currentUser?.uid ||
+                myMerchantIds.contains(o.merchantId)) &&
             o.createdAt.month == now.month &&
             o.createdAt.year == now.year &&
             o.status != OrderStatus.cancelled)
@@ -677,11 +679,9 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
 
     final monthTurnover =
         thisMonthOrders.fold(0.0, (sum, o) => sum + o.grandTotal);
-    final double effectiveTurnover =
-        monthTurnover > 0 ? monthTurnover : 54200.0;
     final double commissionRate = currentUser?.commissionRate ?? 2.0;
     final double earnedCommission =
-        (effectiveTurnover * commissionRate) / 100.0;
+        (monthTurnover * commissionRate) / 100.0;
     final double totalMarketDue =
         (_merchants.fold(0.0, (sum, m) => sum + (m.outstandingDue > 0 ? m.outstandingDue : 0.0))).clamp(0.0, double.infinity);
 
@@ -746,7 +746,7 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
                           style:
                               TextStyle(color: Colors.white70, fontSize: 11)),
                       Text(
-                        CurrencyFormatter.format(effectiveTurnover),
+                        CurrencyFormatter.format(monthTurnover),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,

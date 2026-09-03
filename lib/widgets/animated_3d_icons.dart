@@ -29,8 +29,7 @@ class _Podium3DPainter extends CustomPainter {
 
     // 2. Base Drop Shadow
     final shadowPaint = Paint()
-      ..color = Colors.black.withAlpha(35)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+      ..color = Colors.black.withAlpha(25);
     canvas.drawOval(
       Rect.fromCenter(
         center: Offset(center.dx, center.dy + 6 + 2 * math.sin(animationProgress * 2 * math.pi)),
@@ -126,9 +125,10 @@ class _Animated3DMerchantIconState extends State<Animated3DMerchantIcon>
     const accent = Color(0xFF4CAF50);
     const gold = Color(0xFFFFB300);
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           final t = _controller.value;
@@ -323,7 +323,8 @@ class _Animated3DMerchantIconState extends State<Animated3DMerchantIcon>
           );
         },
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -369,9 +370,10 @@ class _Animated3DSalesmanIconState extends State<Animated3DSalesmanIcon>
     const accent = Color(0xFFFF9800);
     const highlight = Color(0xFFFFD54F);
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           final t = _controller.value;
@@ -586,7 +588,8 @@ class _Animated3DSalesmanIconState extends State<Animated3DSalesmanIcon>
           );
         },
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -632,9 +635,10 @@ class _Animated3DDeliveryIconState extends State<Animated3DDeliveryIcon>
     const accent = Color(0xFF7C4DFF);
     const cyan = Color(0xFF00E5FF);
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           final t = _controller.value;
@@ -885,6 +889,7 @@ class _Animated3DDeliveryIconState extends State<Animated3DDeliveryIcon>
           );
         },
       ),
-    );
+    ),
+  );
   }
 }

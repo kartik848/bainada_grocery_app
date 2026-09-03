@@ -137,24 +137,41 @@ class LocationService {
     );
   }
 
-  /// Direct launch of Turn-by-Turn Navigation on Google Maps from current location
+  /// Direct launch of Turn-by-Turn Navigation on Google Maps using exact coordinates
   static Future<bool> openGoogleMapsNavigation({
     required double destinationLat,
     required double destinationLng,
     String? destinationTitle,
   }) async {
     try {
-      // 1. Driving directions mode
+      // 1. Android geo URI with exact lat,lng pin and title
+      final geoUri = Uri.parse(
+        'geo:$destinationLat,$destinationLng?q=$destinationLat,$destinationLng(${Uri.encodeComponent(destinationTitle ?? "Delivery Destination")})',
+      );
+      if (await canLaunchUrl(geoUri)) {
+        await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+        return true;
+      }
+
+      // 2. Google Maps Navigation intent
+      final navIntentUri = Uri.parse(
+        'google.navigation:q=$destinationLat,$destinationLng&mode=d',
+      );
+      if (await canLaunchUrl(navIntentUri)) {
+        await launchUrl(navIntentUri, mode: LaunchMode.externalApplication);
+        return true;
+      }
+
+      // 3. Driving directions mode (Google Maps Web / App)
       final navUrl = Uri.parse(
         'https://www.google.com/maps/dir/?api=1&destination=$destinationLat,$destinationLng&travelmode=driving',
       );
-
       if (await canLaunchUrl(navUrl)) {
         await launchUrl(navUrl, mode: LaunchMode.externalApplication);
         return true;
       }
 
-      // 2. Fallback to coordinate search
+      // 4. Fallback to coordinate search
       final searchUrl = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$destinationLat,$destinationLng',
       );

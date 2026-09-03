@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/product_provider.dart';
+import '../../services/location_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/cart_bottom_sheet.dart';
@@ -14,6 +15,12 @@ import '../../widgets/order_card.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/top_location_bar.dart';
 import '../auth/auth_wrapper.dart';
+
+enum MerchantDeliveryLocationMode {
+  liveGps,
+  savedShop,
+  manualAddress,
+}
 
 class MerchantDashboard extends StatefulWidget {
   const MerchantDashboard({super.key});
@@ -25,11 +32,18 @@ class MerchantDashboard extends StatefulWidget {
 class _MerchantDashboardState extends State<MerchantDashboard> {
   int _currentTabIndex = 0;
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _manualAddressController = TextEditingController();
+  MerchantDeliveryLocationMode _deliveryLocationMode = MerchantDeliveryLocationMode.liveGps;
+  double? _merchantLiveLat;
+  double? _merchantLiveLng;
+  String? _merchantLiveAddress;
+  bool _isDetectingGps = false;
   bool _isSubmittingOrder = false;
 
   @override
   void initState() {
     super.initState();
+    _detectMerchantLiveGps();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.currentUserModel != null) {
@@ -41,9 +55,29 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
     });
   }
 
+  Future<void> _detectMerchantLiveGps() async {
+    if (_isDetectingGps) return;
+    setState(() => _isDetectingGps = true);
+    try {
+      final loc = await LocationService().getLiveLocationDetails();
+      if (loc != null && mounted) {
+        setState(() {
+          _merchantLiveLat = loc.latitude;
+          _merchantLiveLng = loc.longitude;
+          _merchantLiveAddress = loc.address;
+        });
+      }
+    } catch (e) {
+      debugPrint('[MerchantDashboard] GPS error: $e');
+    } finally {
+      if (mounted) setState(() => _isDetectingGps = false);
+    }
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
+    _manualAddressController.dispose();
     super.dispose();
   }
 
@@ -713,6 +747,282 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
           ),
           const SizedBox(height: 16),
 
+          // 📍 BLINKIT STYLE: DELIVERY LOCATION SELECTOR (3 OPTIONS)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A000000),
+                  blurRadius: 6,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.delivery_dining_rounded, color: Color(0xFF15803D), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'डिलीवरी की लोकेशन (Delivering To)',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF15803D)),
+                          ),
+                          Text(
+                            'Blinkit Style Live GPS • डिलीवरी पार्टनर इसी पते पर आएगा',
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_isDetectingGps)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF16A34A)),
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(Icons.refresh_rounded, color: Color(0xFF16A34A), size: 20),
+                        tooltip: 'GPS Re-fetch',
+                        onPressed: _detectMerchantLiveGps,
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Option 1: Live GPS Location (Blinkit Style)
+                InkWell(
+                  onTap: () => setState(() => _deliveryLocationMode = MerchantDeliveryLocationMode.liveGps),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                          ? const Color(0xFFF0FDF4)
+                          : const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                            ? const Color(0xFF16A34A)
+                            : AppColors.border,
+                        width: _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps ? 1.8 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                          color: _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                              ? const Color(0xFF16A34A)
+                              : AppColors.textMuted,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    '📍 वर्तमान लाइव लोकेशन (Live GPS Location)',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.all(Radius.circular(6)),
+                                    ),
+                                    child: const Text(
+                                      'Blinkit Live',
+                                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _merchantLiveAddress != null && _merchantLiveAddress!.isNotEmpty
+                                    ? _merchantLiveAddress!
+                                    : (_isDetectingGps ? 'GPS से लाइव लोकेशन खोजी जा रही है...' : 'लाइव GPS लोकेशन स्वतः टैग होगी'),
+                                style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                              ),
+                              if (_merchantLiveLat != null && _merchantLiveLng != null) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F5E9),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '🎯 Exact Coordinates: ${_merchantLiveLat!.toStringAsFixed(5)}, ${_merchantLiveLng!.toStringAsFixed(5)}',
+                                    style: const TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1B5E20),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Option 2: Saved Shop Address
+                InkWell(
+                  onTap: () => setState(() => _deliveryLocationMode = MerchantDeliveryLocationMode.savedShop),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                          ? const Color(0xFFF0FDF4)
+                          : const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                            ? const Color(0xFF16A34A)
+                            : AppColors.border,
+                        width: _deliveryLocationMode == MerchantDeliveryLocationMode.savedShop ? 1.8 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          _deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                          color: _deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                              ? const Color(0xFF16A34A)
+                              : AppColors.textMuted,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '🏠 रजिस्टर्ड दुकान: ${user?.shopName ?? user?.name ?? "दुकान का पता"}',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                (user?.address != null && user!.address!.isNotEmpty)
+                                    ? user.address!
+                                    : 'रजिस्टर्ड दुकान का पता उपयोग होगा',
+                                style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                              ),
+                              if (user?.latitude != null && user?.longitude != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Shop GPS: ${user!.latitude!.toStringAsFixed(5)}, ${user.longitude!.toStringAsFixed(5)}',
+                                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF166534)),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Option 3: Manual / Custom Address
+                InkWell(
+                  onTap: () => setState(() => _deliveryLocationMode = MerchantDeliveryLocationMode.manualAddress),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress
+                          ? const Color(0xFFF0FDF4)
+                          : const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress
+                            ? const Color(0xFF16A34A)
+                            : AppColors.border,
+                        width: _deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress ? 1.8 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_off,
+                              color: _deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress
+                                  ? const Color(0xFF16A34A)
+                                  : AppColors.textMuted,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              '✏️ नया पता / अन्य स्थान दर्ज करें (Manual Address)',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        if (_deliveryLocationMode == MerchantDeliveryLocationMode.manualAddress) ...[
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _manualAddressController,
+                            decoration: InputDecoration(
+                              hintText: 'गोदाम, लैंडमार्क, गली या दुकान नंबर दर्ज करें...',
+                              hintStyle: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                              filled: true,
+                              fillColor: Colors.white,
+                              prefixIcon: const Icon(Icons.edit_location_alt_rounded, size: 18, color: AppColors.primary),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Bill Summary Breakdown
           Container(
             padding: const EdgeInsets.all(16),
@@ -784,7 +1094,44 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Selected Destination Summary Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFBBF7D0)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                      ? Icons.gps_fixed_rounded
+                      : (_deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                          ? Icons.storefront_rounded
+                          : Icons.edit_location_alt_rounded),
+                  size: 16,
+                  color: const Color(0xFF16A34A),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _deliveryLocationMode == MerchantDeliveryLocationMode.liveGps
+                        ? 'Delivering to: Live GPS (${_merchantLiveLat != null ? "${_merchantLiveLat!.toStringAsFixed(3)}, ${_merchantLiveLng!.toStringAsFixed(3)}" : "Current Location"})'
+                        : (_deliveryLocationMode == MerchantDeliveryLocationMode.savedShop
+                            ? 'Delivering to: ${user?.shopName ?? "Registered Shop"}'
+                            : 'Delivering to: Custom Address'),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
 
           // Confirm & Place Order Button
           SizedBox(
@@ -798,6 +1145,44 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
                       setState(() => _isSubmittingOrder = true);
                       final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
+                      // Determine EXACT Coordinates & Address selected by Merchant
+                      double? orderLat;
+                      double? orderLng;
+                      String? orderAddr;
+
+                      switch (_deliveryLocationMode) {
+                        case MerchantDeliveryLocationMode.liveGps:
+                          orderLat = _merchantLiveLat ?? user.latitude;
+                          orderLng = _merchantLiveLng ?? user.longitude;
+                          orderAddr = _merchantLiveAddress ?? user.address ?? '${user.city}, Rajasthan';
+
+                          // If coordinates not ready yet, capture live on the fly
+                          if (orderLat == null || orderLng == null) {
+                            try {
+                              final quickLoc = await LocationService().getLiveLocationDetails();
+                              if (quickLoc != null) {
+                                orderLat = quickLoc.latitude;
+                                orderLng = quickLoc.longitude;
+                                orderAddr = quickLoc.address ?? orderAddr;
+                              }
+                            } catch (_) {}
+                          }
+                          break;
+
+                        case MerchantDeliveryLocationMode.savedShop:
+                          orderLat = user.latitude;
+                          orderLng = user.longitude;
+                          orderAddr = user.address ?? '${user.city}, Rajasthan';
+                          break;
+
+                        case MerchantDeliveryLocationMode.manualAddress:
+                          final typed = _manualAddressController.text.trim();
+                          orderAddr = typed.isNotEmpty ? typed : (user.address ?? '${user.city}, Rajasthan');
+                          orderLat = null;
+                          orderLng = null;
+                          break;
+                      }
+
                       final orderId = await orderProvider.placeOrder(
                         merchant: user,
                         items: cart.itemList,
@@ -808,6 +1193,10 @@ class _MerchantDashboardState extends State<MerchantDashboard> {
                         grandTotal: cart.grandTotal,
                         paymentType: cart.paymentType,
                         notes: _notesController.text.trim(),
+                        deliveryLatitude: orderLat,
+                        deliveryLongitude: orderLng,
+                        liveLocationAddress: orderAddr,
+                        deliveryAddressOverride: orderAddr,
                       );
 
                       setState(() => _isSubmittingOrder = false);

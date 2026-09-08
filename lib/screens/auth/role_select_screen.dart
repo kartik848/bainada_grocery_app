@@ -29,251 +29,374 @@ class RoleSelectScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF4F7F5),
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: isDesktop ? 1040 : 480),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 1. Premium Brand Header with Glow Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF0D2818), // Deep Royal Forest
-                          Color(0xFF1B5E20), // Kirana Green
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x330D2818),
-                          blurRadius: 18,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: const Color(0xFF81C784).withAlpha(80),
-                        width: 1.2,
-                      ),
-                    ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isDesktop ? 1040 : 480),
+            child: isDesktop
+                ? SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const BainadaBrandLogo(
-                          isDarkTheme: true,
-                          isStacked: true,
-                          emblemSize: 62,
-                          showSubtext: true,
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(25),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.verified, size: 14, color: Color(0xFFFFD54F)),
-                                SizedBox(width: 6),
-                                Text(
-                                  'B2B WHOLESALE & DISTRIBUTION NETWORK',
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 0.8,
+                        _buildHeader(isDesktop: true),
+                        const SizedBox(height: 20),
+                        _buildInstructionPill(),
+                        const SizedBox(height: 20),
+                        _buildDesktopRoleCards(context),
+                        const SizedBox(height: 24),
+                        const IgnitoCorpBranding(isDarkTheme: false, isCompact: false),
+                      ],
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        physics: const ClampingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: IntrinsicHeight(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // 1. Prominent Brand Header
+                                  _buildHeader(isDesktop: false),
+
+                                  const SizedBox(height: 14),
+
+                                  // 2. Portal Selection Pill
+                                  Center(child: _buildInstructionPill()),
+
+                                  const SizedBox(height: 14),
+
+                                  // 3. The 3 Role Cards
+                                  _buildRoleTileMobile(
+                                    context: context,
+                                    role: UserRole.merchant,
+                                    title: 'Kirana Merchant',
+                                    hindiTitle: 'दुकानदार पोर्टल',
+                                    badge: 'थोक किराना व राशन सामान',
+                                    color: const Color(0xFF1B5E20),
+                                    iconWidget: Animated3DMerchantIcon(
+                                      size: 64,
+                                      onTap: () => _openRoleLoginSheet(context, UserRole.merchant),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 12),
+                                  _buildRoleTileMobile(
+                                    context: context,
+                                    role: UserRole.salesman,
+                                    title: 'Field Salesman',
+                                    hindiTitle: 'फील्ड सेल्समैन पोर्टल',
+                                    badge: 'दुकान ऑनबोर्डिंग व बुकिंग',
+                                    color: const Color(0xFFE65100),
+                                    iconWidget: Animated3DSalesmanIcon(
+                                      size: 64,
+                                      onTap: () => _openRoleLoginSheet(context, UserRole.salesman),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildRoleTileMobile(
+                                    context: context,
+                                    role: UserRole.deliveryBoy,
+                                    title: 'Delivery Partner',
+                                    hindiTitle: 'डिलीवरी साथी पोर्टल',
+                                    badge: 'मैप नेविगेशन व COD कलेक्शन',
+                                    color: const Color(0xFF4A148C),
+                                    iconWidget: Animated3DDeliveryIcon(
+                                      size: 64,
+                                      onTap: () => _openRoleLoginSheet(context, UserRole.deliveryBoy),
+                                    ),
+                                  ),
+
+                                  const Spacer(),
+
+                                  // 4. Footer (No Admin Login)
+                                  _buildMobileFooter(context),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                  const SizedBox(height: 20),
-
-                  // Portal Selection Instruction Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-                    decoration: BoxDecoration(
+  Widget _buildHeader({required bool isDesktop}) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 18, vertical: isDesktop ? 18 : 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF0D2818),
+            Color(0xFF1B5E20),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(isDesktop ? 24 : 20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x330D2818),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: const Color(0xFF81C784).withAlpha(80),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          BainadaBrandLogo(
+            isDarkTheme: true,
+            isStacked: true,
+            emblemSize: isDesktop ? 62 : 56,
+            showSubtext: true,
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withAlpha(25),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.verified, size: 14, color: Color(0xFFFFD54F)),
+                  SizedBox(width: 6),
+                  Text(
+                    'B2B WHOLESALE & DISTRIBUTION NETWORK',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(10),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                      border: Border.all(color: AppColors.primary.withAlpha(40)),
+                      letterSpacing: 0.8,
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.touch_app_rounded, size: 16, color: AppColors.primary),
-                        SizedBox(width: 8),
-                        Text(
-                          'अपना पोर्टल चुनें और लॉगिन करें',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 2. The 3 Role Cards with 3D Animated Icons
-                  if (isDesktop)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildRoleCard(
-                            context: context,
-                            role: UserRole.merchant,
-                            title: 'Kirana Merchant',
-                            hindiTitle: 'दुकानदार',
-                            badge: '🛒 Store Ordering',
-                            description:
-                                'थोक भाव में किराना और राशन मंगवाएं, डिलीवरी ट्रैक करें और खाता लेजर देखें।',
-                            color: const Color(0xFF1B5E20),
-                            iconWidget: Animated3DMerchantIcon(
-                              size: 88,
-                              onTap: () => _openRoleLoginSheet(context, UserRole.merchant),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildRoleCard(
-                            context: context,
-                            role: UserRole.salesman,
-                            title: 'Field Salesman',
-                            hindiTitle: 'फील्ड सेल्समैन',
-                            badge: '💼 Beat & Booking',
-                            description:
-                                'नई दुकानें जोड़ें, व्यापारियों के लिए आर्डर बुक करें और कमीशन ट्रैक करें।',
-                            color: const Color(0xFFE65100),
-                            iconWidget: Animated3DSalesmanIcon(
-                              size: 88,
-                              onTap: () => _openRoleLoginSheet(context, UserRole.salesman),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: _buildRoleCard(
-                            context: context,
-                            role: UserRole.deliveryBoy,
-                            title: 'Delivery Partner',
-                            hindiTitle: 'डिलीवरी साथी',
-                            badge: '🚚 Dispatch & Drops',
-                            description:
-                                'रूट डिलीवरी देखें, व्यापारी को 1-टैप कॉल करें और कैश कलेक्शन सबमिट करें।',
-                            color: const Color(0xFF4A148C),
-                            iconWidget: Animated3DDeliveryIcon(
-                              size: 88,
-                              onTap: () => _openRoleLoginSheet(context, UserRole.deliveryBoy),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        _buildRoleCard(
-                          context: context,
-                          role: UserRole.merchant,
-                          title: 'Kirana Merchant',
-                          hindiTitle: 'दुकानदार पोर्टल',
-                          badge: '🛒 Store Ordering',
-                          description:
-                              'थोक भाव में किराना सामान मंगवाएं, डिलीवरी ट्रैक करें और GST बिल व खाता देखें।',
-                          color: const Color(0xFF1B5E20),
-                          iconWidget: Animated3DMerchantIcon(
-                            size: 92,
-                            onTap: () => _openRoleLoginSheet(context, UserRole.merchant),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildRoleCard(
-                          context: context,
-                          role: UserRole.salesman,
-                          title: 'Field Salesman',
-                          hindiTitle: 'फील्ड सेल्समैन पोर्टल',
-                          badge: '💼 Beat & Booking',
-                          description:
-                              'नई दुकानें ऑनबोर्ड करें, व्यापारियों के आर्डर बुक करें और पेमेंट एंट्री करें।',
-                          color: const Color(0xFFE65100),
-                          iconWidget: Animated3DSalesmanIcon(
-                            size: 92,
-                            onTap: () => _openRoleLoginSheet(context, UserRole.salesman),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildRoleCard(
-                          context: context,
-                          role: UserRole.deliveryBoy,
-                          title: 'Delivery Partner',
-                          hindiTitle: 'डिलीवरी साथी पोर्टल',
-                          badge: '🚚 Dispatch & Drops',
-                          description:
-                              'असाइंड डिलीवरी रूट देखें, 1-टैप कॉल करें, और कैश ऑन डिलीवरी (COD) सबमिट करें।',
-                          color: const Color(0xFF4A148C),
-                          iconWidget: Animated3DDeliveryIcon(
-                            size: 92,
-                            onTap: () => _openRoleLoginSheet(context, UserRole.deliveryBoy),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  // 3. Admin Direct Access Button
-                  TextButton.icon(
-                    onPressed: () => _openRoleLoginSheet(context, UserRole.admin),
-                    icon: const Icon(Icons.admin_panel_settings_rounded, size: 18, color: Color(0xFF374151)),
-                    label: const Text(
-                      'Super-Admin Web & Master Portal Login',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF374151),
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Developer Branding Footer
-                  const IgnitoCorpBranding(
-                    isDarkTheme: false,
-                    isCompact: false,
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInstructionPill() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: AppColors.primary.withAlpha(35)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.touch_app_rounded, size: 15, color: AppColors.primary),
+          SizedBox(width: 6),
+          Text(
+            'अपना पोर्टल चुनें और लॉगिन करें',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleTileMobile({
+    required BuildContext context,
+    required UserRole role,
+    required String title,
+    required String hindiTitle,
+    required String badge,
+    required Color color,
+    required Widget iconWidget,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withAlpha(50), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openRoleLoginSheet(context, role),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 66,
+                  height: 66,
+                  child: Center(child: iconWidget),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        hindiTitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        badge,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withAlpha(60),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopRoleCards(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildRoleCard(
+            context: context,
+            role: UserRole.merchant,
+            title: 'Kirana Merchant',
+            hindiTitle: 'दुकानदार',
+            badge: '🛒 Store Ordering',
+            description:
+                'थोक भाव में किराना और राशन मंगवाएं, डिलीवरी ट्रैक करें और खाता लेजर देखें।',
+            color: const Color(0xFF1B5E20),
+            iconWidget: Animated3DMerchantIcon(
+              size: 88,
+              onTap: () => _openRoleLoginSheet(context, UserRole.merchant),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildRoleCard(
+            context: context,
+            role: UserRole.salesman,
+            title: 'Field Salesman',
+            hindiTitle: 'फील्ड सेल्समैन',
+            badge: '💼 Beat & Booking',
+            description:
+                'नई दुकानें जोड़ें, व्यापारियों के लिए आर्डर बुक करें और कमीशन ट्रैक करें।',
+            color: const Color(0xFFE65100),
+            iconWidget: Animated3DSalesmanIcon(
+              size: 88,
+              onTap: () => _openRoleLoginSheet(context, UserRole.salesman),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildRoleCard(
+            context: context,
+            role: UserRole.deliveryBoy,
+            title: 'Delivery Partner',
+            hindiTitle: 'डिलीवरी साथी',
+            badge: '🚚 Dispatch & Drops',
+            description:
+                'रूट डिलीवरी देखें, व्यापारी को 1-टैप कॉल करें और कैश कलेक्शन सबमिट करें।',
+            color: const Color(0xFF4A148C),
+            iconWidget: Animated3DDeliveryIcon(
+              size: 88,
+              onTap: () => _openRoleLoginSheet(context, UserRole.deliveryBoy),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+
+  Widget _buildMobileFooter(BuildContext context) {
+    return const Center(
+      child: IgnitoCorpBranding(
+        isDarkTheme: false,
+        isCompact: true,
       ),
     );
   }

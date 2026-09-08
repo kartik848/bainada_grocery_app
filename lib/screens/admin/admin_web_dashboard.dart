@@ -381,50 +381,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                   );
                 },
               ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert,
-                    color: AppColors.textSecondary, size: 20),
-                tooltip: 'Admin Actions',
-                onSelected: (val) async {
-                  if (val == 'purge') {
-                    _showPurgeDatabaseDialog();
-                  } else if (val == 'logout') {
-                    Provider.of<OrderProvider>(context, listen: false).clear();
-                    Provider.of<CartProvider>(context, listen: false).clearCart();
-                    final auth = Provider.of<AuthProvider>(context, listen: false);
-                    await auth.logout();
-                    if (!mounted) return;
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const AuthWrapper()),
-                      (route) => false,
-                    );
-                  }
-                },
-                itemBuilder: (ctx) => [
-                  const PopupMenuItem(
-                    value: 'logout',
-                    child: Row(
-                      children: [
-                        Icon(Icons.logout, size: 18, color: Colors.black87),
-                        SizedBox(width: 8),
-                        Text('Sign Out / Email Login'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'purge',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_sweep, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Clear / Reset Database',
-                            style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 4),
+
               TextButton.icon(
                 onPressed: () async {
                   Provider.of<OrderProvider>(context, listen: false).clear();
@@ -8656,86 +8613,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
     );
   }
 
-  void _showPurgeDatabaseDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        bool isDeleting = false;
-        return StatefulBuilder(
-          builder: (dialogCtx, setDialogState) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-                SizedBox(width: 10),
-                Text('Clear All Data (Wipe Database)'),
-              ],
-            ),
-            content: const SizedBox(
-              width: 480,
-              child: Text(
-                'Are you sure you want to permanently clear all data from Firestore?\n\n'
-                '• All Products & Inventory will be wiped.\n'
-                '• All Active & Past Orders will be removed.\n'
-                '• All Kirana Merchants & Khata Ledgers will be wiped.\n'
-                '• All Cash Settlement logs & Payments will be deleted.\n'
-                '• Order Counter will be reset to 0 (Next order starts at BB-001).\n\n'
-                'This allows a 100% clean, fresh production start.',
-                style: TextStyle(fontSize: 13, height: 1.5),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isDeleting ? null : () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton.icon(
-                onPressed: isDeleting
-                    ? null
-                    : () async {
-                        setDialogState(() => isDeleting = true);
-                        try {
-                          await _firestoreService.clearAllFirestoreData();
-                          if (!mounted) return;
-                          Provider.of<CartProvider>(context, listen: false)
-                              .clearCart();
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  '✓ All database data cleared successfully! System is 100% clean & fresh.'),
-                              backgroundColor: Color(0xFF1B5E20),
-                            ),
-                          );
-                          setState(() {});
-                        } catch (e) {
-                          setDialogState(() => isDeleting = false);
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text('Error clearing data: $e'),
-                                backgroundColor: Colors.red),
-                          );
-                        }
-                      },
-                icon: isDeleting
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.delete_forever, size: 18),
-                label: Text(isDeleting
-                    ? 'Purging Database...'
-                    : 'Yes, Delete Everything (Fresh Start)'),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red, foregroundColor: Colors.white),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+
 }
 
 // ==========================================

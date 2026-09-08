@@ -2806,6 +2806,8 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
   // ==========================================
   Widget _buildSalesmenPerformanceContent() {
     final orderProvider = Provider.of<OrderProvider>(context);
+    final productProvider = Provider.of<ProductProvider>(context);
+    final activeOffers = productProvider.salesmanOfferProducts;
 
     return StreamBuilder<List<UserModel>>(
       stream: _firestoreService.streamUsersByRole(UserRole.salesman),
@@ -2876,6 +2878,8 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
               final double commRate = salesman.commissionRate > 0 ? salesman.commissionRate : 2.0;
               final double monthComm = monthSales * (commRate / 100.0);
               final double lifetimeComm = lifetimeSales * (commRate / 100.0);
+              final double monthOfferIncentives = monthOrders.fold(0.0, (acc, o) => acc + o.salesmanIncentiveAmount);
+              final double lifetimeOfferIncentives = attributedOrders.fold(0.0, (acc, o) => acc + o.salesmanIncentiveAmount);
 
               return {
                 'salesman': salesman,
@@ -2887,6 +2891,8 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                 'commRate': commRate,
                 'monthComm': monthComm,
                 'lifetimeComm': lifetimeComm,
+                'monthOfferIncentives': monthOfferIncentives,
+                'lifetimeOfferIncentives': lifetimeOfferIncentives,
               };
             }).toList();
 
@@ -2912,10 +2918,10 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                 // Responsive Analytics Cards
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 800;
+                    final isNarrow = constraints.maxWidth < 900;
                     final cardWidth = isNarrow
                         ? (constraints.maxWidth - 16) / 2
-                        : (constraints.maxWidth - 32) / 3;
+                        : (constraints.maxWidth - 48) / 4;
 
                     return Wrap(
                       spacing: 16,
@@ -2945,6 +2951,23 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                         ),
                         SizedBox(
                           width: cardWidth,
+                          child: InkWell(
+                            onTap: () => _showSalesmanOffersManagerDialog(context),
+                            borderRadius: BorderRadius.circular(12),
+                            child: _buildWebMetricCard(
+                              title: '🎁 Active Salesman Offers',
+                              value: '${activeOffers.length} Active Offers',
+                              subtitle: activeOffers.isEmpty
+                                  ? 'Click to set today\'s offer'
+                                  : 'Daily cash incentive scheme live',
+                              icon: Icons.card_giftcard_rounded,
+                              color: const Color(0xFFD97706),
+                              bg: const Color(0xFFFFFBEB),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: cardWidth,
                           child: _buildWebMetricCard(
                             title: 'Top Performing Sales Officer',
                             value: topSalesmanName,
@@ -2958,6 +2981,10 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+
+                // Dedicated Salesman Daily Product Offers & Incentive Schemes Card
+                _buildSalesmanDailyOffersSection(productProvider, activeOffers),
                 const SizedBox(height: 16),
 
                 // Salesmen Performance Data Table Card
@@ -3014,7 +3041,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
                                   DataColumn(
-                                      label: Text('This Month Commission (₹)',
+                                      label: Text('This Month Earnings (₹)',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
                                   DataColumn(
@@ -3023,7 +3050,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                               fontWeight: FontWeight.bold))),
                                   DataColumn(
                                       label: Text(
-                                          'Total Lifetime Commission (₹)',
+                                          'Total Lifetime Earnings (₹)',
                                           style: TextStyle(
                                               fontWeight: FontWeight.bold))),
                                   DataColumn(
@@ -3040,6 +3067,10 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                   final lifetimeSales = data['lifetimeSales'] as double;
                                   final lifetimeComm = data['lifetimeComm'] as double;
                                   final commRate = data['commRate'] as double;
+                                  final monthOfferIncentives = (data['monthOfferIncentives'] as double?) ?? 0.0;
+                                  final lifetimeOfferIncentives = (data['lifetimeOfferIncentives'] as double?) ?? 0.0;
+                                  final totalMonthEarnings = monthComm + monthOfferIncentives;
+                                  final totalLifetimeEarnings = lifetimeComm + lifetimeOfferIncentives;
 
                                   return DataRow(
                                     cells: [
@@ -3137,23 +3168,76 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Colors.green))),
-                                      DataCell(Text(
-                                          CurrencyFormatter.format(monthComm),
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w900,
-                                              color: Color(0xFFE65100)))),
+                                      DataCell(
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              CurrencyFormatter.format(
+                                                  totalMonthEarnings),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFFE65100)),
+                                            ),
+                                            if (monthOfferIncentives > 0)
+                                              Text(
+                                                'Comm: ₹${monthComm.toStringAsFixed(0)} + Offer: ₹${monthOfferIncentives.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFFD97706)),
+                                              )
+                                            else
+                                              Text(
+                                                'Base (${commRate.toStringAsFixed(1)}%): ₹${monthComm.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: AppColors.textMuted),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                       DataCell(Text(
                                           CurrencyFormatter.format(
                                               lifetimeSales),
                                           style: const TextStyle(
                                               fontWeight: FontWeight.w900,
                                               color: AppColors.primaryDark))),
-                                      DataCell(Text(
-                                          CurrencyFormatter.format(
-                                              lifetimeComm),
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w900,
-                                              color: Color(0xFF2E7D32)))),
+                                      DataCell(
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              CurrencyFormatter.format(
+                                                  totalLifetimeEarnings),
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Color(0xFF2E7D32)),
+                                            ),
+                                            if (lifetimeOfferIncentives > 0)
+                                              Text(
+                                                'Comm: ₹${lifetimeComm.toStringAsFixed(0)} + Offer: ₹${lifetimeOfferIncentives.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF2E7D32)),
+                                              )
+                                            else
+                                              Text(
+                                                'Base (${commRate.toStringAsFixed(1)}%): ₹${lifetimeComm.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                    fontSize: 10,
+                                                    color: AppColors.textMuted),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                       DataCell(
                                         ElevatedButton.icon(
                                           onPressed: () =>
@@ -3189,6 +3273,488 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
           },
         );
       },
+    );
+  }
+
+  // ==========================================
+  // SALESMAN DAILY OFFERS & INCENTIVE SCHEMES
+  // ==========================================
+  Widget _buildSalesmanDailyOffersSection(
+      ProductProvider productProvider, List<ProductModel> activeOffers) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFCD34D)),
+                ),
+                child: const Icon(Icons.card_giftcard_rounded,
+                    color: Color(0xFFD97706), size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '🎁 Salesman Daily Product Offers & Incentive Schemes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF92400E),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: activeOffers.isNotEmpty
+                                ? const Color(0xFFD97706)
+                                : Colors.grey.shade400,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            activeOffers.isNotEmpty
+                                ? '${activeOffers.length} Active Today'
+                                : '0 Active',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'दैनिक सेल्समैन ऑफर & स्कीम्स: Set product-wise daily cash incentives (e.g. ₹5/carton) for salesmen. Active offers automatically display on salesman apps with extra commission rewards.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () => _showSalesmanOffersManagerDialog(context),
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                label: const Text('Configure Daily Offers (ऑफर सेट करें)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                  elevation: 1,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFFDE68A)),
+          const SizedBox(height: 16),
+
+          if (activeOffers.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.campaign_outlined,
+                      size: 44, color: Color(0xFFD97706)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No Active Salesman Offers Running Today',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF92400E),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Boost today\'s sales by setting extra cash incentives (e.g. ₹5 per carton extra) on selected products for salesmen.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFB45309),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton.icon(
+                    onPressed: () => _showSalesmanOffersManagerDialog(context),
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    label: const Text('+ Launch Today\'s First Offer (आज का ऑफर शुरू करें)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 11),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: activeOffers.map((prod) {
+                return _buildActiveOfferCard(productProvider, prod);
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveOfferCard(
+      ProductProvider productProvider, ProductModel prod) {
+    return Container(
+      width: 320,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFCD34D), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: prod.imageUrl != null && prod.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        prod.imageUrl!,
+                        width: 46,
+                        height: 46,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 46,
+                          height: 46,
+                          color: Colors.grey.shade100,
+                          child: const Icon(Icons.inventory_2,
+                              size: 22, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        width: 46,
+                        height: 46,
+                        color: Colors.grey.shade100,
+                        child: const Icon(Icons.inventory_2,
+                            size: 22, color: Colors.grey),
+                      ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      prod.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (prod.hindiName != null &&
+                        prod.hindiName!.trim().isNotEmpty)
+                      Text(
+                        prod.hindiName!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rate: ₹${prod.unitPriceWithGst.toStringAsFixed(2)} / ${prod.unit} (incl. tax)',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined,
+                    size: 16, color: Color(0xFFD97706)),
+                tooltip: 'Edit Offer',
+                onPressed: () => _showQuickEditOfferDialog(prod),
+                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Highlight Badge
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.stars_rounded,
+                    color: Color(0xFFD97706), size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '+ ₹${prod.salesmanIncentive.toStringAsFixed(prod.salesmanIncentive % 1 == 0 ? 0 : 2)} / ${prod.unit} Extra Cash',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5,
+                      color: Color(0xFF92400E),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (prod.salesmanOfferNote != null &&
+              prod.salesmanOfferNote!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '📢 "${prod.salesmanOfferNote}"',
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFFB45309),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 8),
+          // Toggle row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Live in Salesman App',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF16A34A),
+                ),
+              ),
+              Row(
+                children: [
+                  const Text('Active',
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFD97706))),
+                  const SizedBox(width: 4),
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch(
+                      value: true,
+                      activeThumbColor: const Color(0xFFD97706),
+                      onChanged: (val) async {
+                        await productProvider.updateSalesmanOffer(
+                          productId: prod.id,
+                          incentive: prod.salesmanIncentive,
+                          offerNote: prod.salesmanOfferNote,
+                          isActive: false,
+                        );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Offer deactivated for "${prod.name}"'),
+                              backgroundColor: Colors.grey.shade700,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickEditOfferDialog(ProductModel prod) {
+    final productProvider = Provider.of<ProductProvider>(context, listen: false);
+    final incentiveCtrl = TextEditingController(
+      text: prod.salesmanIncentive > 0
+          ? (prod.salesmanIncentive % 1 == 0
+              ? prod.salesmanIncentive.toInt().toString()
+              : prod.salesmanIncentive.toString())
+          : '5',
+    );
+    final noteCtrl = TextEditingController(
+      text: prod.salesmanOfferNote ?? 'Aaj 1 ${prod.unit} sell krne per ₹5 offer!',
+    );
+    bool isActive = prod.isSalesmanOfferActive;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.card_giftcard_rounded, color: Color(0xFFD97706)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Edit Offer: ${prod.name}',
+                      style: const TextStyle(fontSize: 16)),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 420,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Unit: ${prod.unit} | Wholesale Rate: ₹${prod.unitPriceWithGst.toStringAsFixed(2)} (incl. tax)',
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: incentiveCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Incentive Amount (₹ per ${prod.unit})',
+                      prefixText: '₹ ',
+                      hintText: 'e.g. 5',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: noteCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Offer Display Note for Salesmen',
+                      hintText: 'e.g. Aaj 1 carton par ₹5 offer!',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Offer Status (Active / Live)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: Text(
+                      isActive ? 'Offer is live on salesman app' : 'Offer is deactivated',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isActive ? const Color(0xFFD97706) : Colors.grey,
+                      ),
+                    ),
+                    value: isActive,
+                    activeThumbColor: const Color(0xFFD97706),
+                    onChanged: (val) => setDialogState(() => isActive = val),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  final incentive =
+                      double.tryParse(incentiveCtrl.text.trim()) ?? 0.0;
+                  final note = noteCtrl.text.trim();
+                  await productProvider.updateSalesmanOffer(
+                    productId: prod.id,
+                    incentive: incentive,
+                    offerNote: note.isEmpty ? null : note,
+                    isActive: isActive,
+                  );
+                  if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isActive
+                              ? 'Offer updated for "${prod.name}": ₹${incentive.toStringAsFixed(0)}/${prod.unit}'
+                              : 'Offer deactivated for "${prod.name}"',
+                        ),
+                        backgroundColor: isActive
+                            ? const Color(0xFFD97706)
+                            : Colors.grey.shade700,
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Save Changes'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -4510,6 +5076,9 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
               filtered.fold(0.0, (acc, o) => acc + o.grandTotal);
           final totalCommission =
               totalPeriodRevenue * (commissionPercent / 100.0);
+          final totalOfferBonus =
+              filtered.fold(0.0, (acc, o) => acc + o.salesmanIncentiveAmount);
+          final totalPayout = totalCommission + totalOfferBonus;
 
           return AlertDialog(
             title: Row(
@@ -4605,21 +5174,25 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                                'Commission Payout (${commissionPercent.toStringAsFixed(1)}%)',
-                                style: const TextStyle(
+                            const Text(
+                                'Total Earnings Payout',
+                                style: TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary)),
-                            Text(CurrencyFormatter.format(totalCommission),
+                            Text(CurrencyFormatter.format(totalPayout),
                                 style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
                                     color: Color(0xFFE65100))),
-                            const Text('Calculated dynamically per order',
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              totalOfferBonus > 0
+                                  ? 'Base: ${CurrencyFormatter.format(totalCommission)} + Offers: ${CurrencyFormatter.format(totalOfferBonus)}'
+                                  : 'Base Comm (${commissionPercent.toStringAsFixed(1)}%): ${CurrencyFormatter.format(totalCommission)}',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ],
@@ -4652,6 +5225,9 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                         final o = filtered[idx];
                         final orderCommission =
                             o.grandTotal * (commissionPercent / 100.0);
+                        final orderIncentive = o.salesmanIncentiveAmount;
+                        final orderTotalPayout =
+                            orderCommission + orderIncentive;
 
                         return ListTile(
                           dense: true,
@@ -4686,12 +5262,20 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                           fontSize: 13,
                                           color: AppColors.primary)),
                                   Text(
-                                    '+ ${CurrencyFormatter.format(orderCommission)} commission',
+                                    '+ ${CurrencyFormatter.format(orderTotalPayout)} payout',
                                     style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: Color(0xFFE65100)),
                                   ),
+                                  if (orderIncentive > 0)
+                                    Text(
+                                      'Base: ₹${orderCommission.toStringAsFixed(0)} + Offer: ₹${orderIncentive.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFD97706)),
+                                    ),
                                 ],
                               ),
                             ],

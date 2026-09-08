@@ -573,11 +573,24 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        'Rate: ${CurrencyFormatter.format(item.unitPrice)} / ${item.unit} | GST: ${item.gstRate.toInt()}%',
+                                        'Rate: ${CurrencyFormatter.format(item.unitPrice)} / ${item.unit} (including tax) | GST: ${item.gstRate.toInt()}%',
                                         style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
+                                      if (item.salesmanIncentive > 0) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '🎁 Salesman Incentive: ${CurrencyFormatter.format(item.totalSalesmanIncentive)} (${CurrencyFormatter.format(item.salesmanIncentive)}/${item.unit})',
+                                          style: const TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFFE65100),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -822,7 +835,7 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Grand Total (GST Inclusive)',
+                                    'Grand Total (including tax)',
                                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                                   ),
                                   Text(
@@ -835,6 +848,44 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                   ),
                                 ],
                               ),
+                              if (cart.totalSalesmanIncentive > 0) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFFFB74D)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Row(
+                                        children: [
+                                          Icon(Icons.stars_rounded, size: 16, color: Color(0xFFE65100)),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'सेल्समैन ऑफर इंसेंटिव कमाई:',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFBF360C),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '+${CurrencyFormatter.format(cart.totalSalesmanIncentive)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFFE65100),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -934,6 +985,7 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                       deliveryLongitude: resolvedLng,
                                       liveLocationAddress: resolvedLiveLoc,
                                       deliveryAddressOverride: resolvedAddress,
+                                      salesmanIncentiveAmount: cart.totalSalesmanIncentive,
                                     );
 
                                     setState(() => _isSubmitting = false);

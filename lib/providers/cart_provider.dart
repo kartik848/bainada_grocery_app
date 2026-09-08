@@ -21,13 +21,13 @@ class CartProvider with ChangeNotifier {
 
   int get totalUnits => _items.values.fold(0, (sum, item) => sum + item.quantity);
 
-  // Total taxable base amount (Extracted from inclusive GST wholesale prices)
-  double get taxableAmount => _items.values.fold(0.0, (sum, item) => sum + (item.totalItemPrice - item.gstAmount));
+  // Total taxable base amount
+  double get taxableAmount => _items.values.fold(0.0, (sum, item) => sum + item.taxableTotal);
 
   // SubTotal alias (Total with GST)
   double get subTotal => _items.values.fold(0.0, (sum, item) => sum + item.totalItemPrice);
 
-  // Total GST calculation (Included inside wholesale price)
+  // Total GST calculation
   double get totalGst => _items.values.fold(0.0, (sum, item) => sum + item.gstAmount);
 
   // CGST (50% of total GST for intra-state Rajasthan supply)
@@ -39,6 +39,10 @@ class CartProvider with ChangeNotifier {
   // Retail MRP total
   double get totalMrp => _items.values.fold(0.0, (sum, item) => sum + (item.mrp * item.quantity));
 
+  // Total Salesman Daily Incentive earned on this cart
+  double get totalSalesmanIncentive =>
+      _items.values.fold(0.0, (sum, item) => sum + item.totalSalesmanIncentive);
+
   // Savings / Retail Margin for shopkeeper (Retail MRP vs Grand Total)
   double get totalSavings => (totalMrp > grandTotal) ? totalMrp - grandTotal : 0.0;
 
@@ -46,7 +50,7 @@ class CartProvider with ChangeNotifier {
   double get totalVolumeSavings =>
       _items.values.fold(0.0, (sum, item) => sum + item.volumeSavings);
 
-  // Final Net Invoice Grand Total (Wholesale rate is ALREADY inclusive of GST)
+  // Final Net Invoice Grand Total (Inclusive of GST)
   double get grandTotal {
     final net = subTotal - _discount;
     return net > 0 ? net : 0.0;
@@ -58,7 +62,7 @@ class CartProvider with ChangeNotifier {
 
   int getProductQuantity(String productId) => _items[productId]?.quantity ?? 0;
 
-  // Add item with MOQ enforcement & GST-inclusive pricing
+  // Add item with MOQ enforcement & GST-inclusive pricing calculation
   void addItem(ProductModel product, {int? quantity}) {
     final moq = product.moq > 0 ? product.moq : 1;
     final int qtyToAdd = quantity ?? moq;
@@ -67,24 +71,30 @@ class CartProvider with ChangeNotifier {
       final currentQty = _items[product.id]!.quantity;
       final newQty = (currentQty + (quantity ?? 1))
           .clamp(moq, product.stockQuantity > 0 ? product.stockQuantity : 9999);
-      final double effectiveRate = product.getPriceForQuantity(newQty);
-      final double totalLinePrice = effectiveRate * newQty;
-      final double taxableBase = totalLinePrice / (1.0 + (product.gstRate / 100.0));
-      final double gstForLine = totalLinePrice - taxableBase;
+      final double effectiveBaseRate = product.getPriceForQuantity(newQty);
+      final double effectiveRateWithTax =
+          effectiveBaseRate * (1.0 + (product.gstRate / 100.0));
+      final double taxableBase = effectiveBaseRate * newQty;
+      final double gstForLine = taxableBase * (product.gstRate / 100.0);
+      final double totalLinePrice = taxableBase + gstForLine;
 
       _items[product.id] = _items[product.id]!.copyWith(
         quantity: newQty,
-        originalUnitPrice: product.wholesalePrice,
-        unitPrice: effectiveRate,
+        originalUnitPrice: product.unitPriceWithGst,
+        unitPrice: effectiveRateWithTax,
         gstAmount: gstForLine,
         totalItemPrice: totalLinePrice,
+        salesmanIncentive:
+            product.hasSalesmanOffer ? product.salesmanIncentive : 0.0,
       );
     } else {
       final int finalQty = qtyToAdd < moq ? moq : qtyToAdd;
-      final double effectiveRate = product.getPriceForQuantity(finalQty);
-      final double totalLinePrice = effectiveRate * finalQty;
-      final double taxableBase = totalLinePrice / (1.0 + (product.gstRate / 100.0));
-      final double gstForLine = totalLinePrice - taxableBase;
+      final double effectiveBaseRate = product.getPriceForQuantity(finalQty);
+      final double effectiveRateWithTax =
+          effectiveBaseRate * (1.0 + (product.gstRate / 100.0));
+      final double taxableBase = effectiveBaseRate * finalQty;
+      final double gstForLine = taxableBase * (product.gstRate / 100.0);
+      final double totalLinePrice = taxableBase + gstForLine;
 
       _items[product.id] = CartItem(
         productId: product.id,
@@ -94,13 +104,15 @@ class CartProvider with ChangeNotifier {
         unit: product.unit,
         quantity: finalQty,
         unitMultiplier: product.unitMultiplier,
-        originalUnitPrice: product.wholesalePrice,
-        unitPrice: effectiveRate,
+        originalUnitPrice: product.unitPriceWithGst,
+        unitPrice: effectiveRateWithTax,
         gstRate: product.gstRate,
         gstAmount: gstForLine,
         totalItemPrice: totalLinePrice,
         mrp: product.mrp,
         imageUrl: product.imageUrl,
+        salesmanIncentive:
+            product.hasSalesmanOffer ? product.salesmanIncentive : 0.0,
       );
     }
     notifyListeners();
@@ -114,17 +126,21 @@ class CartProvider with ChangeNotifier {
         return; // Stock limit reached
       }
       final newQty = currentQty + 1;
-      final double effectiveRate = product.getPriceForQuantity(newQty);
-      final double totalLinePrice = effectiveRate * newQty;
-      final double taxableBase = totalLinePrice / (1.0 + (product.gstRate / 100.0));
-      final double gstForLine = totalLinePrice - taxableBase;
+      final double effectiveBaseRate = product.getPriceForQuantity(newQty);
+      final double effectiveRateWithTax =
+          effectiveBaseRate * (1.0 + (product.gstRate / 100.0));
+      final double taxableBase = effectiveBaseRate * newQty;
+      final double gstForLine = taxableBase * (product.gstRate / 100.0);
+      final double totalLinePrice = taxableBase + gstForLine;
 
       _items[product.id] = _items[product.id]!.copyWith(
         quantity: newQty,
-        originalUnitPrice: product.wholesalePrice,
-        unitPrice: effectiveRate,
+        originalUnitPrice: product.unitPriceWithGst,
+        unitPrice: effectiveRateWithTax,
         gstAmount: gstForLine,
         totalItemPrice: totalLinePrice,
+        salesmanIncentive:
+            product.hasSalesmanOffer ? product.salesmanIncentive : 0.0,
       );
       notifyListeners();
     } else {
@@ -143,17 +159,21 @@ class CartProvider with ChangeNotifier {
       removeItem(product.id);
     } else {
       final newQty = currentQty - 1;
-      final double effectiveRate = product.getPriceForQuantity(newQty);
-      final double totalLinePrice = effectiveRate * newQty;
-      final double taxableBase = totalLinePrice / (1.0 + (product.gstRate / 100.0));
-      final double gstForLine = totalLinePrice - taxableBase;
+      final double effectiveBaseRate = product.getPriceForQuantity(newQty);
+      final double effectiveRateWithTax =
+          effectiveBaseRate * (1.0 + (product.gstRate / 100.0));
+      final double taxableBase = effectiveBaseRate * newQty;
+      final double gstForLine = taxableBase * (product.gstRate / 100.0);
+      final double totalLinePrice = taxableBase + gstForLine;
 
       _items[product.id] = _items[product.id]!.copyWith(
         quantity: newQty,
-        originalUnitPrice: product.wholesalePrice,
-        unitPrice: effectiveRate,
+        originalUnitPrice: product.unitPriceWithGst,
+        unitPrice: effectiveRateWithTax,
         gstAmount: gstForLine,
         totalItemPrice: totalLinePrice,
+        salesmanIncentive:
+            product.hasSalesmanOffer ? product.salesmanIncentive : 0.0,
       );
       notifyListeners();
     }
@@ -176,23 +196,28 @@ class CartProvider with ChangeNotifier {
     } else {
       final finalQty = newQuantity > maxStock ? maxStock : newQuantity;
       final item = _items[productId]!;
-      final double effectiveRate = product != null
+      final double effectiveGstRate = product?.gstRate ?? (gstRate > 0 ? gstRate : item.gstRate);
+      
+      final double effectiveBaseRate = product != null
           ? product.getPriceForQuantity(finalQty)
-          : (rate > 0 ? rate : item.unitPrice);
-      final double baseRate =
-          product?.wholesalePrice ?? item.originalUnitPrice;
-      final effectiveGstRate = gstRate > 0 ? gstRate : item.gstRate;
-      final double totalLinePrice = effectiveRate * finalQty;
-      final double taxableBase = totalLinePrice / (1.0 + (effectiveGstRate / 100.0));
-      final double gstForLine = totalLinePrice - taxableBase;
+          : (rate > 0 ? rate : (item.unitPrice / (1.0 + (effectiveGstRate / 100.0))));
+          
+      final double effectiveRateWithTax =
+          effectiveBaseRate * (1.0 + (effectiveGstRate / 100.0));
+      final double taxableBase = effectiveBaseRate * finalQty;
+      final double gstForLine = taxableBase * (effectiveGstRate / 100.0);
+      final double totalLinePrice = taxableBase + gstForLine;
+      final double baseRateWithTax = product?.unitPriceWithGst ?? item.originalUnitPrice;
 
       _items[productId] = item.copyWith(
         quantity: finalQty,
-        originalUnitPrice: baseRate,
-        unitPrice: effectiveRate,
+        originalUnitPrice: baseRateWithTax,
+        unitPrice: effectiveRateWithTax,
         gstRate: effectiveGstRate,
         gstAmount: gstForLine,
         totalItemPrice: totalLinePrice,
+        salesmanIncentive:
+            product?.hasSalesmanOffer == true ? product!.salesmanIncentive : item.salesmanIncentive,
       );
     }
     notifyListeners();

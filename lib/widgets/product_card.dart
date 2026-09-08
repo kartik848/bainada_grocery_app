@@ -114,7 +114,7 @@ class ProductCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'Incl. GST ${product.gstRate.toInt()}%',
+                    'GST ${product.gstRate.toInt()}%',
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -122,6 +122,24 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (product.hasSalesmanOffer)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFFFB74D)),
+                    ),
+                    child: Text(
+                      '🎁 Salesman Offer: ₹${product.salesmanIncentive.toStringAsFixed(0)}/${product.unit}',
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFE65100),
+                      ),
+                    ),
+                  ),
                 if (product.isOutOfStock)
                   Container(
                     padding:
@@ -226,6 +244,58 @@ class ProductCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (product.hasSalesmanOffer) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFFB74D)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.stars_rounded,
+                        size: 16, color: Color(0xFFE65100)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                              fontSize: 12, color: Color(0xFFBF360C)),
+                          children: [
+                            const TextSpan(
+                              text: 'सेल्समैन ऑफर: ',
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                            TextSpan(
+                              text:
+                                  '₹${product.salesmanIncentive.toStringAsFixed(0)} / ${product.unit} इंसेंटिव',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFE65100),
+                              ),
+                            ),
+                            if (product.salesmanOfferNote != null &&
+                                product.salesmanOfferNote!.trim().isNotEmpty) ...[
+                              TextSpan(
+                                text: ' • ${product.salesmanOfferNote}',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if (product.tierPricing.isNotEmpty) ...[
               const SizedBox(height: 6),
               Container(
@@ -255,17 +325,21 @@ class ProductCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     ...product.tierPricing.map(
-                      (tier) => Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          '${tier.label}: ${CurrencyFormatter.format(tier.rate)} per ${product.unit}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2E7D32),
+                      (tier) {
+                        final double tierWithTax =
+                            tier.rate * (1.0 + (product.gstRate / 100.0));
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '${tier.label}: ${CurrencyFormatter.format(tierWithTax)} per ${product.unit} (including tax)',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF2E7D32),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -287,7 +361,7 @@ class ProductCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            CurrencyFormatter.format(product.wholesalePrice),
+                            CurrencyFormatter.format(product.unitPriceWithGst),
                             style: const TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
@@ -296,11 +370,11 @@ class ProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '/ ${product.unit} (With GST)',
+                            '/ ${product.unit} (including tax)',
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 11.5,
                               color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -311,9 +385,17 @@ class ProductCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
+                            'Base: ${CurrencyFormatter.format(product.wholesalePrice)} + ${product.gstRate.toInt()}% GST',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
                             'MRP: ${CurrencyFormatter.format(product.mrp)}',
                             style: const TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 11,
                               color: AppColors.textMuted,
                               decoration: TextDecoration.lineThrough,
                             ),

@@ -128,6 +128,7 @@ class CartItem {
   final double gstAmount;
   final double totalItemPrice;
   final String? imageUrl;
+  final double salesmanIncentive; // Daily offer/incentive in ₹ per unit
 
   const CartItem({
     required this.productId,
@@ -144,10 +145,12 @@ class CartItem {
     required this.gstAmount,
     required this.totalItemPrice,
     this.imageUrl,
+    this.salesmanIncentive = 0.0,
   }) : originalUnitPrice = originalUnitPrice ?? unitPrice;
 
   double get taxableTotal => totalItemPrice - gstAmount;
   int get totalPieces => quantity * unitMultiplier;
+  double get totalSalesmanIncentive => salesmanIncentive * quantity;
 
   bool get isTieredDiscountApplied => originalUnitPrice > unitPrice;
   double get volumeSavings => isTieredDiscountApplied
@@ -169,6 +172,7 @@ class CartItem {
     double? gstAmount,
     double? totalItemPrice,
     String? imageUrl,
+    double? salesmanIncentive,
   }) {
     return CartItem(
       productId: productId ?? this.productId,
@@ -185,6 +189,7 @@ class CartItem {
       gstAmount: gstAmount ?? this.gstAmount,
       totalItemPrice: totalItemPrice ?? this.totalItemPrice,
       imageUrl: imageUrl ?? this.imageUrl,
+      salesmanIncentive: salesmanIncentive ?? this.salesmanIncentive,
     );
   }
 
@@ -208,6 +213,8 @@ class CartItem {
       gstAmount: (map['gstAmount'] as num?)?.toDouble() ?? 0.0,
       totalItemPrice: (map['totalItemPrice'] as num?)?.toDouble() ?? 0.0,
       imageUrl: map['imageUrl'],
+      salesmanIncentive:
+          (map['salesmanIncentive'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -227,6 +234,7 @@ class CartItem {
       'gstAmount': gstAmount,
       'totalItemPrice': totalItemPrice,
       'imageUrl': imageUrl,
+      'salesmanIncentive': salesmanIncentive,
     };
   }
 }
@@ -259,6 +267,7 @@ class OrderModel {
   final double? deliveryLongitude; // Live GPS Longitude captured at order placement
   final String? liveLocationAddress; // Live reverse-geocoded delivery address
   final DateTime? liveLocationCapturedAt;
+  final double salesmanIncentiveAmount; // Total offer incentive earned by salesman on this booking
   final DateTime createdAt;
   final DateTime? approvedAt;
   final DateTime? deliveredAt;
@@ -291,6 +300,7 @@ class OrderModel {
     this.deliveryLongitude,
     this.liveLocationAddress,
     this.liveLocationCapturedAt,
+    this.salesmanIncentiveAmount = 0.0,
     required this.createdAt,
     this.approvedAt,
     this.deliveredAt,
@@ -426,6 +436,8 @@ class OrderModel {
           : (map['liveLocationCapturedAt'] is String
               ? DateTime.tryParse(map['liveLocationCapturedAt'])
               : null),
+      salesmanIncentiveAmount:
+          (map['salesmanIncentiveAmount'] as num?)?.toDouble() ?? 0.0,
       createdAt: parsedCreatedAt,
       approvedAt: parsedApprovedAt,
       deliveredAt: parsedDeliveredAt,
@@ -469,6 +481,7 @@ class OrderModel {
       'liveLocationCapturedAt': liveLocationCapturedAt != null
           ? Timestamp.fromDate(liveLocationCapturedAt!)
           : null,
+      'salesmanIncentiveAmount': salesmanIncentiveAmount,
       'createdAt': Timestamp.fromDate(createdAt),
       'approvedAt': approvedAt != null ? Timestamp.fromDate(approvedAt!) : null,
       'deliveredAt':
@@ -504,6 +517,7 @@ class OrderModel {
     double? deliveryLongitude,
     String? liveLocationAddress,
     DateTime? liveLocationCapturedAt,
+    double? salesmanIncentiveAmount,
     DateTime? createdAt,
     DateTime? approvedAt,
     DateTime? deliveredAt,
@@ -537,6 +551,8 @@ class OrderModel {
       liveLocationAddress: liveLocationAddress ?? this.liveLocationAddress,
       liveLocationCapturedAt:
           liveLocationCapturedAt ?? this.liveLocationCapturedAt,
+      salesmanIncentiveAmount:
+          salesmanIncentiveAmount ?? this.salesmanIncentiveAmount,
       createdAt: createdAt ?? this.createdAt,
       approvedAt: approvedAt ?? this.approvedAt,
       deliveredAt: deliveredAt ?? this.deliveredAt,

@@ -26,9 +26,12 @@ class _AddProductModalState extends State<AddProductModal> {
   late TextEditingController _moqCtrl;
   late TextEditingController _stockCtrl;
   late TextEditingController _imageCtrl;
+  late TextEditingController _salesmanIncentiveCtrl;
+  late TextEditingController _salesmanOfferNoteCtrl;
   late String _selectedCategory;
   late String _selectedUnit;
 
+  bool _isSalesmanOfferActive = false;
   bool _isSubmitting = false;
   bool _isUploadingImage = false;
   String? _uploadStatusMessage;
@@ -54,12 +57,31 @@ class _AddProductModalState extends State<AddProductModal> {
     _stockCtrl =
         TextEditingController(text: p?.stockQuantity.toString() ?? '100');
     _imageCtrl = TextEditingController(text: p?.imageUrl ?? '');
+    _salesmanIncentiveCtrl = TextEditingController(
+      text: p != null && p.salesmanIncentive > 0
+          ? (p.salesmanIncentive % 1 == 0
+              ? p.salesmanIncentive.toInt().toString()
+              : p.salesmanIncentive.toString())
+          : '',
+    );
+    _salesmanOfferNoteCtrl =
+        TextEditingController(text: p?.salesmanOfferNote ?? '');
+    _isSalesmanOfferActive = p?.isSalesmanOfferActive ?? false;
     _selectedCategory = p?.category ?? AppConstants.productCategories[1];
     _selectedUnit = p?.unit ?? AppConstants.packagingUnits[0];
+
+    _wholesalePriceCtrl.addListener(_onPriceOrGstChanged);
+    _gstCtrl.addListener(_onPriceOrGstChanged);
+  }
+
+  void _onPriceOrGstChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _wholesalePriceCtrl.removeListener(_onPriceOrGstChanged);
+    _gstCtrl.removeListener(_onPriceOrGstChanged);
     _nameCtrl.dispose();
     _hindiCtrl.dispose();
     _hsnCtrl.dispose();
@@ -69,6 +91,8 @@ class _AddProductModalState extends State<AddProductModal> {
     _moqCtrl.dispose();
     _stockCtrl.dispose();
     _imageCtrl.dispose();
+    _salesmanIncentiveCtrl.dispose();
+    _salesmanOfferNoteCtrl.dispose();
     super.dispose();
   }
 
@@ -79,6 +103,15 @@ class _AddProductModalState extends State<AddProductModal> {
 
     final isEditing = widget.productToEdit != null;
     final double gstRate = double.tryParse(_gstCtrl.text.trim()) ?? 5.0;
+
+    final double salesmanIncentive =
+        double.tryParse(_salesmanIncentiveCtrl.text.trim()) ?? 0.0;
+    final String? salesmanOfferNote =
+        _salesmanOfferNoteCtrl.text.trim().isNotEmpty
+            ? _salesmanOfferNoteCtrl.text.trim()
+            : null;
+    final bool isOfferActive =
+        _isSalesmanOfferActive && salesmanIncentive > 0;
 
     final product = ProductModel(
       id: widget.productToEdit?.id ?? '',
@@ -97,6 +130,9 @@ class _AddProductModalState extends State<AddProductModal> {
           _imageCtrl.text.trim().isNotEmpty ? _imageCtrl.text.trim() : null,
       isAvailable: true,
       tierPricing: widget.productToEdit?.tierPricing ?? const [],
+      salesmanIncentive: salesmanIncentive,
+      salesmanOfferNote: salesmanOfferNote,
+      isSalesmanOfferActive: isOfferActive,
     );
 
     final productProv = Provider.of<ProductProvider>(context, listen: false);
@@ -289,6 +325,66 @@ class _AddProductModalState extends State<AddProductModal> {
               ),
               const SizedBox(height: 10),
 
+              // Live Tax & Price Calculation Preview Card
+              Builder(
+                builder: (context) {
+                  final base =
+                      double.tryParse(_wholesalePriceCtrl.text.trim()) ?? 0.0;
+                  final gst = double.tryParse(_gstCtrl.text.trim()) ?? 0.0;
+                  final taxAmt = base * (gst / 100);
+                  final finalPrice = base + taxAmt;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.calculate_outlined,
+                                size: 16, color: Color(0xFF15803D)),
+                            SizedBox(width: 6),
+                            Text(
+                              'App Rate Preview (Tax Calculation):',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF15803D),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Base: ₹${base.toStringAsFixed(2)} + ${gst % 1 == 0 ? gst.toInt() : gst}% GST (₹${taxAmt.toStringAsFixed(2)})',
+                              style: const TextStyle(
+                                  fontSize: 11, color: Color(0xFF374151)),
+                            ),
+                            Text(
+                              '₹${finalPrice.toStringAsFixed(2)} / $_selectedUnit (including tax)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF15803D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
               Row(
                 children: [
                   Expanded(
@@ -321,6 +417,90 @@ class _AddProductModalState extends State<AddProductModal> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 10),
+
+              // Salesman Daily Incentive Offer Section
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.card_giftcard_rounded,
+                                color: Color(0xFFD97706), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Salesman Daily Offer / स्कीम',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch(
+                          value: _isSalesmanOfferActive,
+                          activeThumbColor: const Color(0xFFD97706),
+                          onChanged: (val) {
+                            setState(() => _isSalesmanOfferActive = val);
+                          },
+                        ),
+                      ],
+                    ),
+                    const Text(
+                      'Set daily incentive per carton/unit (e.g. ₹5/carton). Salesmen earn this commission when booking orders.',
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF78350F)),
+                    ),
+                    if (_isSalesmanOfferActive) ...[
+                      const SizedBox(height: 10),
+                      TextFormField(
+                        controller: _salesmanIncentiveCtrl,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText:
+                              'Incentive per $_selectedUnit (₹)* (e.g. 5)',
+                          prefixText: '₹ ',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          if (!_isSalesmanOfferActive) return null;
+                          final inc = double.tryParse(v?.trim() ?? '');
+                          if (inc == null || inc <= 0) {
+                            return 'Enter incentive amount (e.g. 5)';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _salesmanOfferNoteCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Offer Note / Scheme Banner',
+                          hintText: 'e.g. Aaj 1 cartoon bechne par ₹5 offer!',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               // ImgBB Cloud Photo Upload Section
               Container(

@@ -548,6 +548,9 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
           ),
         ),
 
+        // Live Daily Salesman Offers Section
+        _buildSalesmanOffersSection(productProvider),
+
         // Product Search & Categories Bar
         Container(
           color: Colors.white,
@@ -620,6 +623,230 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
   }
 
   // ==========================================
+  // LIVE DAILY SALESMAN OFFERS BANNER / CAROUSEL
+  // ==========================================
+  Widget _buildSalesmanOffersSection(ProductProvider productProvider) {
+    final offerProducts = productProvider.salesmanOfferProducts;
+    if (offerProducts.isEmpty) return const SizedBox.shrink();
+
+    final cart = Provider.of<CartProvider>(context, listen: false);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        border: Border(
+          bottom: BorderSide(color: Colors.amber.shade200),
+          top: BorderSide(color: Colors.amber.shade200),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE65100),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Icons.local_fire_department_rounded,
+                      color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '🔥 आज के धमाकेदार सेल्समैन ऑफर्स (Daily Schemes)',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFFBF360C),
+                        ),
+                      ),
+                      Text(
+                        'प्रति कार्टन बेचें और पाएं अतिरिक्त कैश इंसेंटिव कमाई!',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: Color(0xFFE65100),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE65100),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${offerProducts.length} Active',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 140,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              itemCount: offerProducts.length,
+              itemBuilder: (ctx, i) {
+                final p = offerProducts[i];
+                final inCart = cart.getProductQuantity(p.id);
+
+                return Container(
+                  width: 255,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: const Color(0xFFFFB74D), width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withAlpha(25),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.inventory_2_rounded,
+                                color: Color(0xFFE65100), size: 22),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '${CurrencyFormatter.format(p.unitPriceWithGst)} / ${p.unit} (including tax)',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(color: const Color(0xFFFFB74D)),
+                        ),
+                        child: Text(
+                          '🎉 ₹${p.salesmanIncentive.toStringAsFixed(0)} / ${p.unit} ऑफर${p.salesmanOfferNote != null && p.salesmanOfferNote!.isNotEmpty ? " • ${p.salesmanOfferNote}" : ""}',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFBF360C),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 28,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            if (_selectedMerchant == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Please select a Kirana merchant first!'),
+                                  backgroundColor: Colors.orange,
+                                ),
+                              );
+                              return;
+                            }
+                            cart.addItem(p);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Added 1 ${p.unit} of "${p.name}" (+₹${p.salesmanIncentive.toStringAsFixed(0)} offer incentive)!'),
+                                backgroundColor: const Color(0xFFE65100),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.add_shopping_cart, size: 14),
+                          label: Text(
+                            inCart > 0
+                                ? 'Booked: $inCart ${p.unit} (+1)'
+                                : 'Book This Offer (+1)',
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE65100),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
   // TAB 2: MY BOOKINGS HISTORY
   // ==========================================
   Widget _buildBookingsHistoryView() {
@@ -682,6 +909,9 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
     final double commissionRate = currentUser?.commissionRate ?? 2.0;
     final double earnedCommission =
         (monthTurnover * commissionRate) / 100.0;
+    final double monthIncentivesEarned = thisMonthOrders.fold(
+        0.0, (sum, o) => sum + o.salesmanIncentiveAmount);
+    final double totalPayout = earnedCommission + monthIncentivesEarned;
     final double totalMarketDue =
         (_merchants.fold(0.0, (sum, m) => sum + (m.outstandingDue > 0 ? m.outstandingDue : 0.0))).clamp(0.0, double.infinity);
 
@@ -774,38 +1004,85 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
               const SizedBox(height: 12),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(40),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.percent_rounded,
-                            color: Colors.white70, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Commission Rate: ${commissionRate.toStringAsFixed(1)}%',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600),
+                        Row(
+                          children: [
+                            const Icon(Icons.percent_rounded,
+                                color: Colors.white70, size: 15),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Standard Commission (${commissionRate.toStringAsFixed(1)}%):',
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Text('Earned: ',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 12)),
                         Text(
                           CurrencyFormatter.format(earnedCommission),
                           style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.stars_rounded,
+                                color: Color(0xFFFFD54F), size: 15),
+                            SizedBox(width: 4),
+                            Text(
+                              'Daily Product Offers Incentive:',
+                              style: TextStyle(
+                                  color: Color(0xFFFFD54F),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '+${CurrencyFormatter.format(monthIncentivesEarned)}',
+                          style: const TextStyle(
+                            color: Color(0xFFFFD54F),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.white24, height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Net Salesman Payout:',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          CurrencyFormatter.format(totalPayout),
+                          style: const TextStyle(
                             color: Color(0xFF86EFAC),
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w900,
                           ),
                         ),

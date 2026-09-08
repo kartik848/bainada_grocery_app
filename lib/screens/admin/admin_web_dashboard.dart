@@ -1185,6 +1185,18 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton.icon(
+                  onPressed: () => _showSalesmanOffersManagerDialog(context),
+                  icon: const Icon(Icons.card_giftcard_rounded, size: 18),
+                  label: const Text('🎁 Salesman Daily Offers'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
                   onPressed: () => _showManageCategoriesDialogWeb(),
                   icon: const Icon(Icons.category_rounded, size: 18),
                   label: const Text('+ Add Category'),
@@ -1268,6 +1280,10 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                                 fontWeight: FontWeight.bold))),
                                     DataColumn(
                                         label: Text('GST Rate',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold))),
+                                    DataColumn(
+                                        label: Text('Salesman Offer',
                                             style: TextStyle(
                                                 fontWeight: FontWeight.bold))),
                                     DataColumn(
@@ -1377,19 +1393,27 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                                       MainAxisSize.min,
                                                   children: [
                                                     Text(
-                                                        CurrencyFormatter
-                                                            .format(prod
-                                                                .wholesalePrice),
+                                                        'Base: ${CurrencyFormatter.format(prod.wholesalePrice)}',
                                                         style: const TextStyle(
                                                             fontWeight:
                                                                 FontWeight
-                                                                    .bold)),
+                                                                    .bold,
+                                                            fontSize: 12)),
                                                     const SizedBox(width: 4),
                                                     const Icon(Icons.edit,
-                                                        size: 14,
+                                                        size: 13,
                                                         color:
                                                             AppColors.primary),
                                                   ],
+                                                ),
+                                                Text(
+                                                  '${CurrencyFormatter.format(prod.unitPriceWithGst)} (including tax)',
+                                                  style: const TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          Color(0xFF16A34A)),
                                                 ),
                                                 if (prod.tierPricing
                                                     .isNotEmpty) ...[
@@ -1426,6 +1450,91 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                         ),
                                         DataCell(Text(
                                             '${prod.gstRate.toStringAsFixed(0)}%')),
+                                        DataCell(
+                                          prod.hasSalesmanOffer
+                                              ? Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                        0xFFFEF3C7),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            6),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFFCD34D)),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          const Icon(
+                                                              Icons
+                                                                  .card_giftcard_rounded,
+                                                              size: 13,
+                                                              color: Color(
+                                                                  0xFFD97706)),
+                                                          const SizedBox(
+                                                              width: 4),
+                                                          Text(
+                                                            '₹${prod.salesmanIncentive.toStringAsFixed(0)} / ${prod.unit}',
+                                                            style: const TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: Color(
+                                                                    0xFF92400E)),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      if (prod.salesmanOfferNote !=
+                                                          null)
+                                                        Text(
+                                                          prod.salesmanOfferNote!,
+                                                          style: const TextStyle(
+                                                              fontSize: 10,
+                                                              color: Color(
+                                                                  0xFFB45309)),
+                                                          maxLines: 1,
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
+                                                        ),
+                                                    ],
+                                                  ),
+                                                )
+                                              : TextButton.icon(
+                                                  onPressed: () =>
+                                                      _showProductDialogWeb(
+                                                          product: prod),
+                                                  icon: const Icon(Icons.add,
+                                                      size: 13),
+                                                  label: const Text(
+                                                      'Set Offer',
+                                                      style: TextStyle(
+                                                          fontSize: 11)),
+                                                  style: TextButton.styleFrom(
+                                                    foregroundColor:
+                                                        const Color(
+                                                            0xFFD97706),
+                                                    padding: EdgeInsets.zero,
+                                                    minimumSize:
+                                                        const Size(60, 24),
+                                                  ),
+                                                ),
+                                        ),
                                         DataCell(Text('${prod.moq}')),
                                         DataCell(Text(
                                             '${prod.unit} (${prod.unitMultiplier} pcs)')),
@@ -6326,6 +6435,16 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
               : product.gstRate.toString())
           : '5',
     );
+    final salesmanIncentiveCtrl = TextEditingController(
+      text: product != null && product.salesmanIncentive > 0
+          ? (product.salesmanIncentive % 1 == 0
+              ? product.salesmanIncentive.toInt().toString()
+              : product.salesmanIncentive.toString())
+          : '',
+    );
+    final salesmanOfferNoteCtrl =
+        TextEditingController(text: product?.salesmanOfferNote ?? '');
+    bool isSalesmanOfferActive = product?.isSalesmanOfferActive ?? false;
 
     bool isSubmitting = false;
 
@@ -6590,6 +6709,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: gstCtrl,
+                                    onChanged: (_) => setModalState(() {}),
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
                                             decimal: true),
@@ -6618,6 +6738,7 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: priceCtrl,
+                                    onChanged: (_) => setModalState(() {}),
                                     keyboardType:
                                         const TextInputType.numberWithOptions(
                                             decimal: true),
@@ -6660,6 +6781,67 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Live Tax & Price Calculation Preview Card
+                            Builder(
+                              builder: (context) {
+                                final base =
+                                    double.tryParse(priceCtrl.text.trim()) ??
+                                        0.0;
+                                final gst =
+                                    double.tryParse(gstCtrl.text.trim()) ?? 0.0;
+                                final taxAmt = base * (gst / 100);
+                                final finalPrice = base + taxAmt;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF0FDF4),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xFF86EFAC)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.calculate_rounded,
+                                              size: 18,
+                                              color: Color(0xFF16A34A)),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'App Customer Rate: Base ₹${base.toStringAsFixed(2)} + ${gst % 1 == 0 ? gst.toInt() : gst}% GST (₹${taxAmt.toStringAsFixed(2)}) = ',
+                                            style: const TextStyle(
+                                                fontSize: 12.5,
+                                                color: Color(0xFF166534),
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF16A34A),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '₹${finalPrice.toStringAsFixed(2)} / $selectedUnit (including tax)',
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 22),
 
@@ -7189,6 +7371,108 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 22),
+
+                            // SECTION F: SALESMAN DAILY OFFER & SCHEME
+                            buildSectionHeader(
+                                'Section F: Salesman Daily Offer & Scheme (सेल्समैन दैनिक ऑफर)',
+                                Icons.card_giftcard_rounded),
+                            const SizedBox(height: 14),
+
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFBEB),
+                                borderRadius: BorderRadius.circular(12),
+                                border:
+                                    Border.all(color: const Color(0xFFFDE68A)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Active Daily Salesman Offer / सेल्समैन दैनिक ऑफर',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13.5,
+                                                color: Color(0xFF92400E)),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            'Give salesman a special cash incentive (e.g. ₹5 per carton) for selling this product today.',
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                color: Color(0xFFB45309)),
+                                          ),
+                                        ],
+                                      ),
+                                      Switch(
+                                        value: isSalesmanOfferActive,
+                                        activeThumbColor:
+                                            const Color(0xFFD97706),
+                                        onChanged: (val) {
+                                          setModalState(() =>
+                                              isSalesmanOfferActive = val);
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  if (isSalesmanOfferActive) ...[
+                                    const SizedBox(height: 14),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: salesmanIncentiveCtrl,
+                                            keyboardType: const TextInputType
+                                                .numberWithOptions(
+                                                decimal: true),
+                                            decoration: buildInputDecoration(
+                                              labelText:
+                                                  'Incentive per $selectedUnit (₹)*',
+                                              prefixText: '₹ ',
+                                              hintText: 'e.g. 5.00',
+                                            ),
+                                            validator: (v) {
+                                              if (!isSalesmanOfferActive) {
+                                                return null;
+                                              }
+                                              final inc = double.tryParse(
+                                                  v?.trim() ?? '');
+                                              if (inc == null || inc <= 0) {
+                                                return 'Enter incentive (e.g. 5)';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          flex: 2,
+                                          child: TextFormField(
+                                            controller: salesmanOfferNoteCtrl,
+                                            decoration: buildInputDecoration(
+                                              labelText:
+                                                  'Offer Banner Note (Hindi/English)',
+                                              hintText:
+                                                  'e.g. Aaj 1 carton par ₹5 cash incentive!',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -7268,6 +7552,17 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                         double.tryParse(gstCtrl.text.trim()) ??
                                             5.0;
 
+                                    final incentive = double.tryParse(
+                                            salesmanIncentiveCtrl.text.trim()) ??
+                                        0.0;
+                                    final note = salesmanOfferNoteCtrl.text
+                                            .trim()
+                                            .isNotEmpty
+                                        ? salesmanOfferNoteCtrl.text.trim()
+                                        : null;
+                                    final isOffer =
+                                        isSalesmanOfferActive && incentive > 0;
+
                                     final List<PriceTier> parsedTiers = [];
                                     for (final tc in tierControllers) {
                                       final min = int.tryParse(
@@ -7319,6 +7614,9 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
                                       imageUrl: imgUrl,
                                       tierPricing: parsedTiers,
                                       isAvailable: true,
+                                      salesmanIncentive: incentive,
+                                      salesmanOfferNote: note,
+                                      isSalesmanOfferActive: isOffer,
                                     );
 
                                     final prodProv =
@@ -7403,32 +7701,279 @@ class _AdminWebDashboardState extends State<AdminWebDashboard> {
         TextEditingController(text: product.wholesalePrice.toString());
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Edit Price: ${product.name}'),
-        content: TextField(
-          controller: priceCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-              labelText: 'New Wholesale Price (₹)', prefixText: '₹ '),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              final newPrice = double.tryParse(priceCtrl.text.trim());
-              if (newPrice != null && newPrice > 0) {
-                await Provider.of<ProductProvider>(context, listen: false)
-                    .updatePrice(product.id, newPrice);
-              }
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Update Price',
-                style: TextStyle(color: Colors.white)),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          final base = double.tryParse(priceCtrl.text.trim()) ?? 0.0;
+          final gstRate = product.gstRate;
+          final gstAmt = base * (gstRate / 100);
+          final finalPrice = base + gstAmt;
+
+          return AlertDialog(
+            title: Text('Edit Price: ${product.name}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: priceCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Wholesale Base Price (₹, Excl. Tax)*',
+                      prefixText: '₹ ',
+                      border: OutlineInputBorder()),
+                  onChanged: (_) => setDialogState(() {}),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.calculate_outlined,
+                              size: 16, color: Color(0xFF15803D)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'GST Rate: ${gstRate.toStringAsFixed(0)}% (+₹${gstAmt.toStringAsFixed(2)})',
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                color: Color(0xFF166534),
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'App Selling Rate: ₹${finalPrice.toStringAsFixed(2)} / ${product.unit} (including tax)',
+                        style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF15803D)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  final newPrice = double.tryParse(priceCtrl.text.trim());
+                  if (newPrice != null && newPrice > 0) {
+                    await Provider.of<ProductProvider>(context, listen: false)
+                        .updatePrice(product.id, newPrice);
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary),
+                child: const Text('Update Price',
+                    style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  void _showSalesmanOffersManagerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            final productProvider = Provider.of<ProductProvider>(dialogCtx);
+            final allProducts = productProvider.products;
+            final displayedProducts = searchQuery.trim().isEmpty
+                ? allProducts
+                : allProducts.where((p) {
+                    final q = searchQuery.toLowerCase();
+                    return p.name.toLowerCase().contains(q) ||
+                        (p.hindiName != null &&
+                            p.hindiName!.toLowerCase().contains(q)) ||
+                        p.category.toLowerCase().contains(q);
+                  }).toList();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 850,
+                  maxHeight: MediaQuery.of(dialogCtx).size.height * 0.85,
+                ),
+                child: Column(
+                  children: [
+                    // Dialog Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFD97706),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.card_giftcard_rounded,
+                                  color: Colors.white, size: 24),
+                              SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '🎁 Salesman Daily Offers & Schemes (दैनिक सेल्समैन ऑफर)',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Set product-wise daily cash incentives (e.g. ₹5/carton) for salesmen to boost sales today',
+                                    style: TextStyle(
+                                        color: Colors.white70, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.pop(dialogCtx),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Search box
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: TextField(
+                        onChanged: (val) =>
+                            setDialogState(() => searchQuery = val),
+                        decoration: InputDecoration(
+                          hintText:
+                              'Search wholesale products to set daily offers...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFCBD5E1)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+
+                    // Product list
+                    Expanded(
+                      child: displayedProducts.isEmpty
+                          ? const Center(
+                              child: Text('No matching products found.'))
+                          : ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              itemCount: displayedProducts.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (itemCtx, index) {
+                                final prod = displayedProducts[index];
+                                return _SalesmanOfferItemTile(
+                                  product: prod,
+                                  onSave: (incentive, note, isActive) async {
+                                    await productProvider.updateSalesmanOffer(
+                                      productId: prod.id,
+                                      incentive: incentive,
+                                      offerNote: note,
+                                      isActive: isActive,
+                                    );
+                                    if (itemCtx.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            isActive
+                                                ? 'Offer activated for "${prod.name}": ₹${incentive.toStringAsFixed(0)}/${prod.unit}'
+                                                : 'Offer deactivated for "${prod.name}"',
+                                          ),
+                                          backgroundColor: isActive
+                                              ? const Color(0xFFD97706)
+                                              : Colors.grey.shade700,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+
+                    // Bottom info bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        border: Border(
+                            top: BorderSide(color: Color(0xFFE2E8F0))),
+                        borderRadius:
+                            BorderRadius.vertical(bottom: Radius.circular(16)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Active Offers: ${allProducts.where((p) => p.hasSalesmanOffer).length} / ${allProducts.length} items',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(dialogCtx),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD97706),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 10),
+                            ),
+                            child: const Text('Done'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -7663,6 +8208,215 @@ class _LiveDateTimeWidgetState extends State<_LiveDateTimeWidget> {
               letterSpacing: 0.2,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SalesmanOfferItemTile extends StatefulWidget {
+  final ProductModel product;
+  final Future<void> Function(double incentive, String? note, bool isActive)
+      onSave;
+
+  const _SalesmanOfferItemTile({
+    required this.product,
+    required this.onSave,
+  });
+
+  @override
+  State<_SalesmanOfferItemTile> createState() => _SalesmanOfferItemTileState();
+}
+
+class _SalesmanOfferItemTileState extends State<_SalesmanOfferItemTile> {
+  late TextEditingController _incentiveCtrl;
+  late TextEditingController _noteCtrl;
+  late bool _isActive;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _incentiveCtrl = TextEditingController(
+      text: widget.product.salesmanIncentive > 0
+          ? (widget.product.salesmanIncentive % 1 == 0
+              ? widget.product.salesmanIncentive.toInt().toString()
+              : widget.product.salesmanIncentive.toString())
+          : '5',
+    );
+    _noteCtrl = TextEditingController(
+      text: widget.product.salesmanOfferNote ??
+          'Aaj 1 ${widget.product.unit} sell krne per ₹5 offer!',
+    );
+    _isActive = widget.product.isSalesmanOfferActive;
+  }
+
+  @override
+  void dispose() {
+    _incentiveCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prod = widget.product;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _isActive ? const Color(0xFFFFFBEB) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color:
+              _isActive ? const Color(0xFFFCD34D) : const Color(0xFFE2E8F0),
+          width: _isActive ? 1.5 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: prod.imageUrl != null && prod.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        prod.imageUrl!,
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 44,
+                          height: 44,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.inventory_2,
+                              size: 20, color: Colors.grey),
+                        ),
+                      )
+                    : Container(
+                        width: 44,
+                        height: 44,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.inventory_2,
+                            size: 20, color: Colors.grey),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      prod.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13.5),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rate: ₹${prod.unitPriceWithGst.toStringAsFixed(2)} / ${prod.unit} (including tax) | Base: ₹${prod.wholesalePrice.toStringAsFixed(2)} + ${prod.gstRate.toStringAsFixed(0)}% GST',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    _isActive ? 'Active Offer' : 'Offer Off',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          _isActive ? const Color(0xFFD97706) : Colors.grey,
+                    ),
+                  ),
+                  Switch(
+                    value: _isActive,
+                    activeThumbColor: const Color(0xFFD97706),
+                    onChanged: (val) {
+                      setState(() => _isActive = val);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (_isActive) ...[
+            const Divider(height: 16, color: Color(0xFFFDE68A)),
+            Row(
+              children: [
+                SizedBox(
+                  width: 170,
+                  child: TextField(
+                    controller: _incentiveCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Incentive / ${prod.unit} (₹)*',
+                      prefixText: '₹ ',
+                      hintText: 'e.g. 5',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _noteCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Offer Banner / Scheme Text',
+                      hintText: 'e.g. Aaj 1 ${prod.unit} bechne par ₹5 offer!',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 10),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: _isSaving
+                      ? null
+                      : () async {
+                          final inc =
+                              double.tryParse(_incentiveCtrl.text.trim()) ??
+                                  0.0;
+                          setState(() => _isSaving = true);
+                          await widget.onSave(
+                              inc, _noteCtrl.text.trim(), _isActive);
+                          if (mounted) setState(() => _isSaving = false);
+                        },
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.check, size: 16),
+                  label: const Text('Save Offer'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

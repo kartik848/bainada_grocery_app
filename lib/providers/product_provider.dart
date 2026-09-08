@@ -18,6 +18,7 @@ class ProductProvider with ChangeNotifier {
   String? _errorMessage;
 
   List<ProductModel> get allProducts => _allProducts;
+  List<ProductModel> get products => _allProducts;
   String get selectedCategory => _selectedCategory;
   String get searchQuery => _searchQuery;
   bool get isLoading => _isLoading;
@@ -67,6 +68,10 @@ class ProductProvider with ChangeNotifier {
       _allProducts.where((p) => p.isLowStock || p.isOutOfStock).toList();
 
   int get lowStockCount => lowStockProducts.length;
+
+  // Active Salesman Offer Products (Special Daily Incentive Schemes)
+  List<ProductModel> get salesmanOfferProducts =>
+      _allProducts.where((p) => p.hasSalesmanOffer).toList();
 
   ProductProvider() {
     _initProducts();
@@ -217,6 +222,26 @@ class ProductProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
+    }
+  }
+
+  Future<void> updateSalesmanOffer({
+    required String productId,
+    required double incentive,
+    required String? offerNote,
+    required bool isActive,
+  }) async {
+    try {
+      await _firestoreService.updateSalesmanOffer(
+        productId: productId,
+        incentive: incentive,
+        offerNote: offerNote,
+        isActive: isActive,
+      );
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
     }
   }
 

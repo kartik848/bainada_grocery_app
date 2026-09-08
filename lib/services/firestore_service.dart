@@ -91,6 +91,19 @@ class FirestoreService {
     });
   }
 
+  Future<void> updateSalesmanOffer({
+    required String productId,
+    required double incentive,
+    required String? offerNote,
+    required bool isActive,
+  }) async {
+    await _productsRef.doc(productId).update({
+      'salesmanIncentive': incentive,
+      'salesmanOfferNote': offerNote,
+      'isSalesmanOfferActive': isActive,
+    });
+  }
+
   Future<void> deleteProduct(String id) async {
     await _productsRef.doc(id).delete();
   }

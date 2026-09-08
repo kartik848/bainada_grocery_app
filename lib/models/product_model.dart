@@ -50,6 +50,9 @@ class ProductModel {
   final String? imageUrl; // Hostinger image link or cloud URL
   final bool isAvailable;
   final List<PriceTier> tierPricing; // Bulk slab pricing
+  final double salesmanIncentive; // Daily offer/incentive in ₹ per unit/carton (e.g. ₹5 per carton)
+  final String? salesmanOfferNote; // Optional custom offer text e.g. 'Aaj ka offer: ₹5 per carton'
+  final bool isSalesmanOfferActive; // Whether this offer is currently active
 
   const ProductModel({
     required this.id,
@@ -68,7 +71,15 @@ class ProductModel {
     this.imageUrl,
     this.isAvailable = true,
     this.tierPricing = const [],
+    this.salesmanIncentive = 0.0,
+    this.salesmanOfferNote,
+    this.isSalesmanOfferActive = false,
   });
+
+  bool get hasSalesmanOffer => isSalesmanOfferActive && salesmanIncentive > 0;
+
+  double calculateSalesmanIncentive(int qty) =>
+      hasSalesmanOffer ? (salesmanIncentive * qty) : 0.0;
 
   // Calculate rate based on ordered volume / slabs
   double getPriceForQuantity(int qty) {
@@ -143,6 +154,10 @@ class ProductModel {
       imageUrl: map['imageUrl'],
       isAvailable: map['isAvailable'] ?? true,
       tierPricing: tiers,
+      salesmanIncentive: (map['salesmanIncentive'] as num?)?.toDouble() ?? 0.0,
+      salesmanOfferNote: map['salesmanOfferNote'],
+      isSalesmanOfferActive: map['isSalesmanOfferActive'] ??
+          (((map['salesmanIncentive'] as num?)?.toDouble() ?? 0.0) > 0),
     );
   }
 
@@ -164,6 +179,9 @@ class ProductModel {
       'imageUrl': imageUrl,
       'isAvailable': isAvailable,
       'tierPricing': tierPricing.map((t) => t.toMap()).toList(),
+      'salesmanIncentive': salesmanIncentive,
+      if (salesmanOfferNote != null) 'salesmanOfferNote': salesmanOfferNote,
+      'isSalesmanOfferActive': isSalesmanOfferActive,
     };
   }
 
@@ -184,6 +202,9 @@ class ProductModel {
     String? imageUrl,
     bool? isAvailable,
     List<PriceTier>? tierPricing,
+    double? salesmanIncentive,
+    String? salesmanOfferNote,
+    bool? isSalesmanOfferActive,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -202,6 +223,10 @@ class ProductModel {
       imageUrl: imageUrl ?? this.imageUrl,
       isAvailable: isAvailable ?? this.isAvailable,
       tierPricing: tierPricing ?? this.tierPricing,
+      salesmanIncentive: salesmanIncentive ?? this.salesmanIncentive,
+      salesmanOfferNote: salesmanOfferNote ?? this.salesmanOfferNote,
+      isSalesmanOfferActive:
+          isSalesmanOfferActive ?? this.isSalesmanOfferActive,
     );
   }
 }

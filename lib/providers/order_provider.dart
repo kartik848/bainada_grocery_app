@@ -158,6 +158,7 @@ class OrderProvider with ChangeNotifier {
     double? deliveryLongitude,
     String? liveLocationAddress,
     String? deliveryAddressOverride,
+    double salesmanIncentiveAmount = 0.0,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -168,6 +169,9 @@ class OrderProvider with ChangeNotifier {
       final double? finalLng = deliveryLongitude ?? merchant.longitude;
       final String? finalLocationAddr =
           liveLocationAddress ?? merchant.locationAddress;
+      final double computedIncentive = salesmanIncentiveAmount > 0
+          ? salesmanIncentiveAmount
+          : items.fold(0.0, (sum, i) => sum + i.totalSalesmanIncentive);
 
       final newOrder = OrderModel(
         id: '',
@@ -199,6 +203,7 @@ class OrderProvider with ChangeNotifier {
         liveLocationAddress: finalLocationAddr,
         liveLocationCapturedAt:
             (finalLat != null && finalLng != null) ? DateTime.now() : null,
+        salesmanIncentiveAmount: computedIncentive,
         createdAt: DateTime.now(),
       );
 

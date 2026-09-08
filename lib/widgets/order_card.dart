@@ -392,7 +392,7 @@ class OrderCard extends StatelessWidget {
                                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                               ),
                               Text(
-                                '${item.quantity} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)} | HSN: ${item.hsnCode} | GST ${item.gstRate.toStringAsFixed(0)}% (₹${item.gstAmount.toStringAsFixed(2)})',
+                                '${item.quantity} ${item.unit} @ ${CurrencyFormatter.format(item.unitPrice)} (including tax) | HSN: ${item.hsnCode} | GST ${item.gstRate.toStringAsFixed(0)}% (₹${item.gstAmount.toStringAsFixed(2)})',
                                 style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                               ),
                             ],
@@ -446,7 +446,7 @@ class OrderCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'Grand Total (Tax Invoice)',
+                      'Grand Total (including tax)',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
                     ),
                     Text(
@@ -459,6 +459,36 @@ class OrderCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (order.salesmanIncentiveAmount > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFFFB74D)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.stars_rounded, size: 16, color: Color(0xFFE65100)),
+                            SizedBox(width: 6),
+                            Text(
+                              'Salesman Offer Incentive:',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFBF360C)),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          '+${CurrencyFormatter.format(order.salesmanIncentiveAmount)}',
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Color(0xFFE65100)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [

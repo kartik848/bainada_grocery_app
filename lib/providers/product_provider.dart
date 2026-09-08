@@ -49,7 +49,9 @@ class ProductProvider with ChangeNotifier {
   List<ProductModel> get filteredProducts {
     return _allProducts.where((product) {
       final matchesCategory = _selectedCategory == 'All Categories' ||
-          product.category.toLowerCase() == _selectedCategory.toLowerCase();
+          (_selectedCategory.contains('Offer') || _selectedCategory.contains('ऑफर')
+              ? product.hasSalesmanOffer
+              : product.category.toLowerCase() == _selectedCategory.toLowerCase());
 
       final query = _searchQuery.trim().toLowerCase();
       final matchesSearch = query.isEmpty ||

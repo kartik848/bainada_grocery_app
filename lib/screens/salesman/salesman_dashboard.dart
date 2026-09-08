@@ -36,6 +36,7 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
   UserModel? _selectedMerchant;
   bool _isLoadingMerchants = true;
   StreamSubscription<List<UserModel>>? _merchantsSub;
+  bool _isOffersExpanded = true;
 
   @override
   void initState() {
@@ -548,9 +549,6 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
           ),
         ),
 
-        // Live Daily Salesman Offers Section
-        _buildSalesmanOffersSection(productProvider),
-
         // Product Search & Categories Bar
         Container(
           color: Colors.white,
@@ -576,22 +574,55 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
                 height: 32,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: AppConstants.productCategories.length,
+                  itemCount: AppConstants.productCategories.length +
+                      (productProvider.salesmanOfferProducts.isNotEmpty ? 1 : 0),
                   itemBuilder: (ctx, idx) {
-                    final cat = AppConstants.productCategories[idx];
-                    final isSelected = productProvider.selectedCategory == cat;
+                    final hasOffers =
+                        productProvider.salesmanOfferProducts.isNotEmpty;
+                    String cat;
+                    if (hasOffers && idx == 1) {
+                      cat = '🔥 Daily Offers';
+                    } else if (hasOffers && idx > 1) {
+                      cat = AppConstants.productCategories[idx - 1];
+                    } else {
+                      cat = AppConstants.productCategories[idx];
+                    }
+                    final isSelected =
+                        productProvider.selectedCategory == cat;
+                    final isOfferChip = cat == '🔥 Daily Offers';
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: ChoiceChip(
-                        label: Text(cat, style: const TextStyle(fontSize: 11)),
+                        label: Text(
+                          isOfferChip
+                              ? '🔥 Daily Offers (${productProvider.salesmanOfferProducts.length})'
+                              : cat,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: (isSelected || isOfferChip)
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
                         selected: isSelected,
-                        selectedColor: const Color(0xFFE65100).withAlpha(40),
+                        selectedColor: isOfferChip
+                            ? const Color(0xFFFFCC80)
+                            : const Color(0xFFE65100).withAlpha(40),
+                        backgroundColor:
+                            isOfferChip ? const Color(0xFFFFF3E0) : null,
+                        side: isOfferChip
+                            ? const BorderSide(
+                                color: Color(0xFFFFB74D), width: 1.2)
+                            : null,
                         labelStyle: TextStyle(
-                          color: isSelected
-                              ? const Color(0xFFE65100)
-                              : AppColors.textSecondary,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isOfferChip
+                              ? const Color(0xFFBF360C)
+                              : (isSelected
+                                  ? const Color(0xFFE65100)
+                                  : AppColors.textSecondary),
+                          fontWeight: (isSelected || isOfferChip)
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                         onSelected: (_) => productProvider.setCategory(cat),
                       ),
@@ -603,17 +634,31 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
           ),
         ),
 
-        // Products Grid
+        // Products Grid with Offers Section as Top Feed Card
         Expanded(
           child: productProvider.isLoading
               ? const Center(child: CircularProgressIndicator())
               : productProvider.filteredProducts.isEmpty
                   ? const Center(child: Text('No wholesale products found.'))
                   : ListView.builder(
-                      padding: const EdgeInsets.only(top: 8, bottom: 80),
-                      itemCount: productProvider.filteredProducts.length,
+                      padding: const EdgeInsets.only(top: 6, bottom: 80),
+                      itemCount: (productProvider.salesmanOfferProducts.isNotEmpty &&
+                              productProvider.selectedCategory == 'All Categories' &&
+                              productProvider.searchQuery.isEmpty)
+                          ? productProvider.filteredProducts.length + 1
+                          : productProvider.filteredProducts.length,
                       itemBuilder: (ctx, i) {
-                        final product = productProvider.filteredProducts[i];
+                        final hasOffersHeader =
+                            productProvider.salesmanOfferProducts.isNotEmpty &&
+                                productProvider.selectedCategory == 'All Categories' &&
+                                productProvider.searchQuery.isEmpty;
+
+                        if (hasOffersHeader && i == 0) {
+                          return _buildSalesmanOffersSection(productProvider);
+                        }
+
+                        final productIndex = hasOffersHeader ? i - 1 : i;
+                        final product = productProvider.filteredProducts[productIndex];
                         return ProductCard(product: product);
                       },
                     ),
@@ -632,82 +677,107 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
     final cart = Provider.of<CartProvider>(context, listen: false);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.fromLTRB(10, 6, 10, 8),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
-        border: Border(
-          bottom: BorderSide(color: Colors.amber.shade200),
-          top: BorderSide(color: Colors.amber.shade200),
-        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.amber.shade300, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withAlpha(20),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE65100),
-                    borderRadius: BorderRadius.circular(6),
+          InkWell(
+            onTap: () => setState(() => _isOffersExpanded = !_isOffersExpanded),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE65100),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.local_fire_department_rounded,
+                        color: Colors.white, size: 16),
                   ),
-                  child: const Icon(Icons.local_fire_department_rounded,
-                      color: Colors.white, size: 16),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '🔥 आज के धमाकेदार सेल्समैन ऑफर्स (Daily Schemes)',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFFBF360C),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '🔥 आज के धमाकेदार ऑफर्स (Daily Schemes)',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFBF360C),
+                          ),
                         ),
-                      ),
-                      Text(
-                        'प्रति कार्टन बेचें और पाएं अतिरिक्त कैश इंसेंटिव कमाई!',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: Color(0xFFE65100),
-                          fontWeight: FontWeight.w600,
+                        Text(
+                          _isOffersExpanded
+                              ? 'प्रति कार्टन बेचें और पाएं अतिरिक्त कैश इंसेंटिव!'
+                              : 'टैप करके ऑफर्स देखें (Tap to view schemes)',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFFE65100),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE65100),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${offerProducts.length} Active',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE65100),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${offerProducts.length} Active',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          _isOffersExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white,
+                          size: 15,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 140,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: offerProducts.length,
-              itemBuilder: (ctx, i) {
+          if (_isOffersExpanded) ...[
+            const Divider(height: 1, color: Color(0xFFFFE082)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                itemCount: offerProducts.length,
+                itemBuilder: (ctx, i) {
                 final p = offerProducts[i];
                 final inCart = cart.getProductQuantity(p.id);
 
@@ -842,9 +912,10 @@ class _SalesmanDashboardState extends State<SalesmanDashboard> {
             ),
           ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   // ==========================================
   // TAB 2: MY BOOKINGS HISTORY
